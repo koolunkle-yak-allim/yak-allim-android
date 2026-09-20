@@ -20,7 +20,7 @@
 - **Architecture**: Clean Architecture & MVVM
 - **Asynchronous**: Coroutines & Flow
 - **Dependency Injection**: Hilt
-- **Network**: Retrofit2, OkHttp3, Moshi
+- **Network**: Retrofit2, OkHttp3, kotlinx.serialization
 - **Image/Camera**: CameraX, Coil, ExifInterface
 - **Local Storage**: DataStore Preferences
 - **Notification**: Firebase Cloud Messaging (FCM)
@@ -35,6 +35,7 @@
 - **UI Layer**: Jetpack Compose를 활용한 선언적 UI와 상태 관리를 위한 ViewModel
 
 ### Package Structure
+
 ```text
 com.example.yakallim
 ├── data            # 데이터 및 인프라 구현체
@@ -56,15 +57,19 @@ com.example.yakallim
 ## Getting Started
 
 ### Prerequisites
+
 - **Android Studio**: Ladybug (2024.2.1) or higher
 - **JDK**: Java 11
 - **SDK**: Compile SDK 37, Min SDK 24
 
 ### Installation & Build
-1.  저장소를 복제합니다:
+
+1. 저장소를 복제합니다:
+
     ```bash
-    git clone https://github.com/your-username/yak-allim-android.git
+    git clone https://github.com/koolunkle-yak-allim/yak-allim-android.git
     ```
-2.  프로젝트 루트에 `secrets.properties` 파일을 생성하고 필요한 환경 변수를 설정합니다.
-3.  Firebase 프로젝트 설정 후 `app/` 디렉토리에 `google-services.json` 파일을 추가합니다.
-4.  Android Studio에서 프로젝트를 빌드하고 실행합니다.
+
+2. 프로젝트 루트에 `secrets.properties` 파일을 생성하고 필요한 환경 변수를 설정합니다.
+3. Firebase 프로젝트 설정 후 `app/` 디렉토리에 `google-services.json` 파일을 추가합니다.
+4. Android Studio에서 프로젝트를 빌드하고 실행합니다.
