@@ -1,12 +1,15 @@
 package com.example.yakallim.ui.ocr
 
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import com.example.yakallim.domain.model.PrescribedMedicine
 import com.example.yakallim.domain.model.Prescription
+import com.example.yakallim.ui.alarm.AlarmUiState
 import org.junit.Rule
 import org.junit.Test
 
@@ -38,6 +41,8 @@ class OcrScreenTest {
             OcrScreenContent(
                 modifier = Modifier,
                 uiState = uiState,
+                alarmUiState = AlarmUiState(isInitialized = true),
+                snackbarHostState = remember { SnackbarHostState() },
                 lazyListState = rememberLazyListState(),
                 highlightedMedicineName = highlightedMedicineName,
                 isGuideSheetVisible = false,

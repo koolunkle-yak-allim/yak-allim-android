@@ -2,11 +2,14 @@ package com.example.yakallim.ui.ocr
 
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import com.example.yakallim.domain.model.PrescribedMedicine
 import com.example.yakallim.domain.model.Prescription
+import com.example.yakallim.ui.alarm.AlarmUiState
 
 @Preview(showBackground = true)
 @Composable
@@ -38,6 +41,8 @@ internal fun OcrScreenContentPreview() {
                     medicines = duplicateMedicines
                 )
             ),
+            alarmUiState = AlarmUiState(isInitialized = true),
+            snackbarHostState = remember { SnackbarHostState() },
             lazyListState = rememberLazyListState(),
             highlightedMedicineName = null,
             isGuideSheetVisible = false,

@@ -7,20 +7,15 @@ import com.example.yakallim.domain.model.Prescription
 import com.example.yakallim.domain.model.PrescribedMedicine
 import com.example.yakallim.domain.model.Progress
 import com.example.yakallim.domain.notification.PushMessage
-import com.example.yakallim.domain.usecase.CancelAlarmUseCase
 import com.example.yakallim.domain.usecase.CancelPrescriptionUseCase
 import com.example.yakallim.domain.usecase.ClearLastPrescriptionUseCase
-import com.example.yakallim.domain.usecase.GetActiveAlarmsUseCase
 import com.example.yakallim.domain.usecase.GetCachedImageUriUseCase
-import com.example.yakallim.domain.usecase.GetDetailAlarmUseCase
 import com.example.yakallim.domain.usecase.GetLastPrescriptionUseCase
 import com.example.yakallim.domain.usecase.GetPendingPrescriptionUseCase
 import com.example.yakallim.domain.usecase.GetPrescriptionResultUseCase
 import com.example.yakallim.domain.usecase.ObserveProgressUseCase
 import com.example.yakallim.domain.usecase.PrepareImageUseCase
 import com.example.yakallim.domain.usecase.RequestPrescriptionUseCase
-import com.example.yakallim.domain.usecase.ScheduleAlarmUseCase
-import com.example.yakallim.testutil.FakeAlarmScheduler
 import com.example.yakallim.testutil.FakeImageProcessor
 import com.example.yakallim.testutil.FakeOcrRepository
 import com.example.yakallim.testutil.FakePushNotificationObserver
@@ -30,6 +25,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runCurrent
@@ -53,14 +49,12 @@ class OcrViewModelTest {
     val mainDispatcherRule = MainDispatcherRule()
 
     private lateinit var fakeRepository: FakeOcrRepository
-    private lateinit var fakeAlarmScheduler: FakeAlarmScheduler
     private lateinit var fakeImageProcessor: FakeImageProcessor
     private lateinit var fakePushObserver: FakePushNotificationObserver
 
     @Before
     fun setUp() {
         fakeRepository = FakeOcrRepository()
-        fakeAlarmScheduler = FakeAlarmScheduler()
         fakeImageProcessor = FakeImageProcessor()
         fakePushObserver = FakePushNotificationObserver()
     }
@@ -73,14 +67,10 @@ class OcrViewModelTest {
             requestPrescriptionUseCase = RequestPrescriptionUseCase(fakeRepository),
             getPrescriptionResultUseCase = GetPrescriptionResultUseCase(fakeRepository),
             getPendingPrescriptionUseCase = GetPendingPrescriptionUseCase(fakeRepository),
-            getActiveAlarmsUseCase = GetActiveAlarmsUseCase(fakeAlarmScheduler),
             getLastPrescriptionUseCase = GetLastPrescriptionUseCase(fakeRepository),
             clearLastPrescriptionUseCase = ClearLastPrescriptionUseCase(fakeRepository),
-            scheduleAlarmUseCase = ScheduleAlarmUseCase(fakeAlarmScheduler),
-            cancelAlarmUseCase = CancelAlarmUseCase(fakeAlarmScheduler),
             cancelPrescriptionUseCase = CancelPrescriptionUseCase(fakeRepository),
             observeProgressUseCase = ObserveProgressUseCase(fakeRepository),
-            getDetailAlarmUseCase = GetDetailAlarmUseCase(fakeAlarmScheduler),
             prepareImageUseCase = PrepareImageUseCase(fakeImageProcessor),
             getCachedImageUriUseCase = GetCachedImageUriUseCase(fakeRepository),
             pushNotificationObserver = fakePushObserver.observer,
@@ -220,47 +210,47 @@ class OcrViewModelTest {
     }
 
     @Test
-    fun registerMedicineAlarm_whenSchedulingSucceeds_addsToRegisteredAlarms() = runTest {
+    fun updateMedicineDosage_updatesOnlyTheMatchingMedicineInAnalysisResult() = runTest {
         val viewModel = createViewModel()
         advanceUntilIdle()
 
-        viewModel.registerMedicineAlarm(
-            medicineId = "medicine-1",
-            medicineName = "타이레놀정",
-            dosagePerTake = "1정",
-            dailyFrequency = 3,
-            durationDays = 5,
-            alarmTimes = listOf("09:00"),
-            soundUri = null
-        )
+        fakeRepository.progressFlow = flowOf(Progress(JobStatus.COMPLETED, "", 100, true))
+        fakeRepository.resultFlow = flowOf(Result.success(samplePrescription()))
+        viewModel.onImageSelected(mock<Uri>())
+        viewModel.onAnalysisRequested()
         advanceUntilIdle()
 
-        val state = viewModel.uiState.value
-        assertNull(state.error)
-        assertTrue(state.registeredAlarms.containsKey("타이레놀정"))
-        assertEquals(listOf("타이레놀정"), fakeAlarmScheduler.scheduledCalls)
+        // AlarmViewModel calls this after a successful registration to reflect the
+        // dosage/frequency/duration the user confirmed in the alarm dialog.
+        viewModel.updateMedicineDosage(
+            medicineId = "medicine-1",
+            dosagePerTake = "2정",
+            dailyFrequency = 2,
+            durationDays = 7
+        )
+
+        val medicine = viewModel.uiState.value.analysisResult?.medicines?.single()
+        assertEquals("2정", medicine?.dosagePerTake)
+        assertEquals(2, medicine?.dailyFrequency)
+        assertEquals(7, medicine?.durationDays)
     }
 
     @Test
-    fun registerMedicineAlarm_whenSchedulingFails_showsErrorAndDoesNotRegister() = runTest {
+    fun onAnalysisRequested_whenAnalysisActuallyStarts_emitsAnalysisStartedEvent() = runTest {
         val viewModel = createViewModel()
         advanceUntilIdle()
 
-        fakeAlarmScheduler.scheduleShouldThrow = true
+        fakeRepository.progressFlow = flowOf(Progress(JobStatus.COMPLETED, "", 100, true))
+        fakeRepository.resultFlow = flowOf(Result.success(samplePrescription()))
 
-        viewModel.registerMedicineAlarm(
-            medicineId = "medicine-1",
-            medicineName = "타이레놀정",
-            dosagePerTake = "1정",
-            dailyFrequency = 3,
-            durationDays = 5,
-            alarmTimes = listOf("09:00"),
-            soundUri = null
-        )
+        var eventCount = 0
+        val collectorJob = launch { viewModel.analysisStartedEvents.collect { eventCount++ } }
+
+        viewModel.onImageSelected(mock<Uri>())
+        viewModel.onAnalysisRequested()
         advanceUntilIdle()
 
-        val state = viewModel.uiState.value
-        assertTrue(state.error is OcrError.Unknown)
-        assertTrue(state.registeredAlarms.isEmpty())
+        assertEquals(1, eventCount)
+        collectorJob.cancel()
     }
 }
