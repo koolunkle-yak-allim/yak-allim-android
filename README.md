@@ -25,6 +25,7 @@
 - **Local Storage**: DataStore Preferences
 - **Notification**: Firebase Cloud Messaging (FCM)
 - **Security & Build**: Secrets Gradle Plugin, Network Security Config, R8/ProGuard
+- **Testing**: JUnit, Turbine(Flow 테스트), Mockito-Kotlin, Compose UI Test
 
 ## Project Structure
 
@@ -45,10 +46,14 @@ com.example.yakallim
 │   └── repository  # 레포지토리 인터페이스 구현체
 ├── di              # 의존성 주입을 위한 Hilt 모듈
 ├── domain          # 비즈니스 로직 및 모델
+│   ├── alarm       # 알람 시각 계산 등 순수 도메인 로직(AlarmTimeCalculator)
+│   ├── image       # 이미지 처리 인터페이스
 │   ├── model       # 도메인 모델
+│   ├── notification # 푸시 알림 옵저버 인터페이스
 │   ├── repository  # 도메인 레포지토리 인터페이스
 │   └── usecase     # 기능적 비즈니스 로직 단위
 └── ui              # UI 컴포넌트 및 뷰모델
+    ├── alarm       # 알람 등록/취소/복구 화면 상태(AlarmViewModel)
     ├── camera      # 카메라 및 이미지 선택 기능
     ├── ocr         # OCR 진행 및 결과 UI
     └── theme       # 디자인 시스템 및 테마 정의
@@ -70,6 +75,10 @@ com.example.yakallim
     git clone https://github.com/koolunkle-yak-allim/yak-allim-android.git
     ```
 
-2. 프로젝트 루트에 `secrets.properties` 파일을 생성하고 필요한 환경 변수를 설정합니다.
+2. 프로젝트 루트에 `secrets.properties` 파일을 생성하고 필요한 환경 변수를 설정합니다(`secrets.defaults.properties` 참고).
 3. Firebase 프로젝트 설정 후 `app/` 디렉토리에 `google-services.json` 파일을 추가합니다.
-4. Android Studio에서 프로젝트를 빌드하고 실행합니다.
+4. `secrets.properties`의 `BASE_URL`을 백엔드(`yak-allim-server` + `yak-allim-infra`) 주소로 지정합니다.
+   - 같은 PC에서 Android 에뮬레이터로 테스트: `BASE_URL=http://10.0.2.2/` (에뮬레이터가 호스트 PC의 localhost를 가리키는 특수 별칭)
+   - 같은 Wi-Fi의 실제 기기로 테스트: `BASE_URL=http://<백엔드가 떠 있는 PC의 LAN IP>/`
+   - 디버그 빌드는 `app/src/debug/res/xml/network_security_config.xml`에 등록된 도메인(`10.0.2.2`, `localhost`, 특정 LAN IP)에 한해서만 평문 HTTP를 허용합니다. 실제 기기의 IP가 다르면 이 파일에 도메인을 추가해야 합니다. (릴리스 빌드는 평문 HTTP를 허용하지 않습니다.)
+5. Android Studio에서 프로젝트를 빌드하고 실행합니다.
