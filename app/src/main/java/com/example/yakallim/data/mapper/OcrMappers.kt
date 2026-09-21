@@ -42,9 +42,9 @@ fun OcrResponse.toDomain(): Prescription {
         PrescribedMedicine(
             id = UUID.randomUUID().toString(),
             name = medicine.medicineName,
-            dosagePerTake = medicine.dosagePerTake ?: "1",
-            dailyFrequency = medicine.dailyFrequency ?: 0,
-            durationDays = medicine.durationDays ?: 0,
+            dosagePerTake = medicine.dosagePerTake?.takeIf { it.isNotBlank() },
+            dailyFrequency = medicine.dailyFrequency?.takeIf { it > 0 },
+            durationDays = medicine.durationDays?.takeIf { it > 0 },
             isLowConfidence = matchedConfidence < 0.8f,
             bounds = medicine.bounds?.map { polygon ->
                 Polygon(
