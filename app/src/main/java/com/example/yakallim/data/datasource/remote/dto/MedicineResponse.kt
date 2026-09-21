@@ -9,5 +9,8 @@ data class MedicineResponse(
     @SerialName("dosagePerTake") val dosagePerTake: String? = "",
     @SerialName("dailyFrequency") val dailyFrequency: Int? = 0,
     @SerialName("durationDays") val durationDays: Int? = 0,
-    @SerialName("bounds") val bounds: List<PolygonResponse>? = emptyList()
+    @SerialName("bounds") val bounds: List<PolygonResponse>? = emptyList(),
+    @SerialName("rawName") val rawName: String? = null,
+    @SerialName("autoCorrected") val autoCorrected: Boolean? = null,
+    @SerialName("confidence") val confidence: Float? = null
 )
