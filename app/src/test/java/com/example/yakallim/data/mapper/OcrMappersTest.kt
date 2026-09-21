@@ -3,12 +3,13 @@ package com.example.yakallim.data.mapper
 import com.example.yakallim.data.datasource.remote.dto.MedicineResponse
 import com.example.yakallim.data.datasource.remote.dto.OcrResponse
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Test
 
 class OcrMappersTest {
 
     @Test
-    fun toDomain_whenDosagePerTakeIsNull_mapsToFallbackValueOne() {
+    fun toDomain_whenDosagePerTakeIsNull_keepsItNullInsteadOfFakingAValue() {
         val rawResponse = OcrResponse(
             fileName = "test.jpg",
             message = "Success",
@@ -27,7 +28,31 @@ class OcrMappersTest {
         val domainPrescription = rawResponse.toDomain()
         val mappedMedication = domainPrescription.medicines.first()
 
-        assertEquals("1", mappedMedication.dosagePerTake)
+        assertNull(mappedMedication.dosagePerTake)
+    }
+
+    @Test
+    fun toDomain_whenDailyFrequencyOrDurationDaysIsMissingOrZero_keepsThemNull() {
+        val rawResponse = OcrResponse(
+            fileName = "test.jpg",
+            message = "Success",
+            textBlocks = emptyList(),
+            medicines = listOf(
+                MedicineResponse(
+                    medicineName = "타이레놀",
+                    dosagePerTake = "1정",
+                    dailyFrequency = null,
+                    durationDays = 0,
+                    bounds = null
+                )
+            )
+        )
+
+        val domainPrescription = rawResponse.toDomain()
+        val mappedMedication = domainPrescription.medicines.first()
+
+        assertNull(mappedMedication.dailyFrequency)
+        assertNull(mappedMedication.durationDays)
     }
 
     @Test
