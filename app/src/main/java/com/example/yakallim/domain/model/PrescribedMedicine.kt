@@ -6,5 +6,7 @@ data class PrescribedMedicine(
     val dailyFrequency: Int,
     val durationDays: Int,
     val bounds: List<Polygon> = emptyList(),
-    val isLowConfidence: Boolean = false
+    val isLowConfidence: Boolean = false,
+    val rawName: String? = null,
+    val autoCorrected: Boolean = false
 )

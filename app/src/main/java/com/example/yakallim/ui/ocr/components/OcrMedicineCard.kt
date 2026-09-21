@@ -182,12 +182,31 @@ fun OcrMedicineCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = medicineName,
-                        color = if (isAlarmRegistered) Success else Primary,
-                        fontWeight = FontWeight.ExtraBold,
-                        style = MaterialTheme.typography.titleMedium
-                    )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(space = 6.dp)
+                    ) {
+                        Text(
+                            text = medicineName,
+                            color = if (isAlarmRegistered) Success else Primary,
+                            fontWeight = FontWeight.ExtraBold,
+                            style = MaterialTheme.typography.titleMedium
+                        )
+                        if (medicineInfo.autoCorrected) {
+                            Surface(
+                                shape = RoundedCornerShape(size = 6.dp),
+                                color = Secondary.copy(alpha = 0.12f)
+                            ) {
+                                Text(
+                                    text = stringResource(R.string.medicine_auto_corrected_badge),
+                                    color = Secondary,
+                                    fontWeight = FontWeight.Bold,
+                                    style = MaterialTheme.typography.labelSmall,
+                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                )
+                            }
+                        }
+                    }
                     if (!isCardExpanded) {
                         Spacer(modifier = Modifier.height(height = 4.dp))
                         Text(
@@ -327,6 +346,14 @@ fun OcrMedicineCard(
                             color = MaterialTheme.colorScheme.onSurface,
                             style = MaterialTheme.typography.bodyMedium
                         )
+                        if (medicineInfo.autoCorrected && !medicineInfo.rawName.isNullOrBlank()) {
+                            Spacer(modifier = Modifier.height(height = 6.dp))
+                            Text(
+                                text = stringResource(R.string.medicine_raw_name_format, medicineInfo.rawName),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                style = MaterialTheme.typography.bodySmall
+                            )
+                        }
                     }
                 }
                 if (isAlarmRegistered && alarm != null && alarm.times.isNotEmpty()) {

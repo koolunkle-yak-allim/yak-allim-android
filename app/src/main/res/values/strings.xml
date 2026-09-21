@@ -48,6 +48,8 @@
     <string name="prescription_daily_frequency">복용 횟수</string>
     <string name="prescription_duration_days">복용 기간</string>
     <string name="prescription_dosage_per_take">복용량</string>
+    <string name="medicine_auto_corrected_badge">자동 교정됨</string>
+    <string name="medicine_raw_name_format">OCR 인식 원문: %1$s</string>
 
     <string name="error_invalid_time_format">올바른 시간 형식을 입력해 주세요. (예: 09:30)</string>
     <string name="alarm_permission_required">지정 시간에 알람을 받으려면 \'알람 및 리마인더\' 권한이 필요합니다. 설정 화면으로 이동합니다.</string>

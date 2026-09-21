@@ -3,6 +3,9 @@ package com.example.yakallim.data.mapper
 import com.example.yakallim.data.datasource.remote.dto.MedicineResponse
 import com.example.yakallim.data.datasource.remote.dto.OcrResponse
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class OcrMappersTest {
@@ -51,5 +54,59 @@ class OcrMappersTest {
         val mappedMedication = domainPrescription.medicines.first()
 
         assertEquals("2정", mappedMedication.dosagePerTake)
+    }
+
+    @Test
+    fun toDomain_whenServerReportsLowConfidenceAfterNameCorrection_marksAsLowConfidence() {
+        // 원문 텍스트에는 교정 전 이름("아르레온정")만 있고, 서버가 교정한 이름("타이레놀정")은 없다.
+        // 과거에는 textBlocks.find로 매칭에 실패해 기본값 1.0(신뢰도 높음)으로 처리되던 케이스.
+        val rawResponse = OcrResponse(
+            fileName = "test.jpg",
+            message = "Success",
+            textBlocks = emptyList(),
+            medicines = listOf(
+                MedicineResponse(
+                    medicineName = "타이레놀정",
+                    dosagePerTake = "1정",
+                    dailyFrequency = 3,
+                    durationDays = 5,
+                    bounds = null,
+                    rawName = "아르레온정",
+                    autoCorrected = true,
+                    confidence = 0.4f
+                )
+            )
+        )
+
+        val mappedMedication = rawResponse.toDomain().medicines.first()
+
+        assertTrue(mappedMedication.isLowConfidence)
+        assertTrue(mappedMedication.autoCorrected)
+        assertEquals("아르레온정", mappedMedication.rawName)
+    }
+
+    @Test
+    fun toDomain_whenConfidenceIsMissing_defaultsToNotLowConfidence() {
+        val rawResponse = OcrResponse(
+            fileName = "test.jpg",
+            message = "Success",
+            textBlocks = emptyList(),
+            medicines = listOf(
+                MedicineResponse(
+                    medicineName = "게보린정",
+                    dosagePerTake = "1정",
+                    dailyFrequency = 3,
+                    durationDays = 5,
+                    bounds = null,
+                    confidence = null
+                )
+            )
+        )
+
+        val mappedMedication = rawResponse.toDomain().medicines.first()
+
+        assertFalse(mappedMedication.isLowConfidence)
+        assertFalse(mappedMedication.autoCorrected)
+        assertNull(mappedMedication.rawName)
     }
 }
