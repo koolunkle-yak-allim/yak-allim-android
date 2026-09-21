@@ -5,9 +5,10 @@ enum class JobStatus {
     IMAGE_PROCESSING,
     TEXT_DETECTION,
     TEXT_RECOGNITION,
-    EXPORT_RESULT,
+    PARSING,
     COMPLETED,
-    FAILED;
+    FAILED,
+    UNKNOWN;
 
     val isFinished: Boolean get() = this == COMPLETED || this == FAILED
 }

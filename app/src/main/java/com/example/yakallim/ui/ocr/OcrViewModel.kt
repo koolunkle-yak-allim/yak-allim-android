@@ -224,9 +224,14 @@ class OcrViewModel @Inject constructor(
                 observeProgressUseCase(jobId)
                     .onEach { progress ->
                         _uiState.update { state ->
+                            val currentProgress = state.progress
                             state.copy(
-                                progress = state.progress?.copy(
-                                    jobStatus = progress.jobStatus,
+                                progress = currentProgress?.copy(
+                                    jobStatus = if (progress.jobStatus == JobStatus.UNKNOWN) {
+                                        currentProgress.jobStatus
+                                    } else {
+                                        progress.jobStatus
+                                    },
                                     percent = progress.percent,
                                     message = progress.message
                                 )
