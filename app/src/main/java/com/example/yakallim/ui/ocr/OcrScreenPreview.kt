@@ -14,12 +14,14 @@ internal fun OcrScreenContentPreview() {
     MaterialTheme {
         val duplicateMedicines = listOf(
             PrescribedMedicine(
+                id = "preview-1",
                 name = "타이레놀",
                 dosagePerTake = "1",
                 dailyFrequency = 3,
                 durationDays = 3
             ),
             PrescribedMedicine(
+                id = "preview-2",
                 name = "타이레놀",
                 dosagePerTake = "2",
                 dailyFrequency = 2,
@@ -48,7 +50,7 @@ internal fun OcrScreenContentPreview() {
             onStartAnalysisClick = {},
             onCancelAnalysisClick = {},
             onMedicineTextClick = {},
-            onRegisterAlarmClick = { _, _, _, _ -> },
+            onRegisterAlarmClick = { _, _, _, _, _ -> },
             onCancelAlarmClick = {},
             onToggleCardExpansion = {},
             onToggleAllCardsExpansion = {}

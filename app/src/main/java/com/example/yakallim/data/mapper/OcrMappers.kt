@@ -6,6 +6,7 @@ import com.example.yakallim.domain.model.Polygon
 import com.example.yakallim.domain.model.PrescribedMedicine
 import com.example.yakallim.domain.model.Prescription
 import com.example.yakallim.domain.model.TextBlock
+import java.util.UUID
 
 fun OcrResponse.toDomain(): Prescription {
     val textBlocks = this.textBlocks ?: emptyList()
@@ -16,6 +17,7 @@ fun OcrResponse.toDomain(): Prescription {
         val matchedConfidence = matchedTextBlock?.confidence ?: 1.0f
 
         PrescribedMedicine(
+            id = UUID.randomUUID().toString(),
             name = medicine.medicineName,
             dosagePerTake = medicine.dosagePerTake ?: "1",
             dailyFrequency = medicine.dailyFrequency ?: 0,

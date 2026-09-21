@@ -17,7 +17,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
-import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -147,7 +147,7 @@ fun OcrScreen(
     }
 
     val onRegisterAlarm =
-        { medicineName: String, dosagePerTake: String, dailyFrequency: Int, durationDays: Int ->
+        { medicineId: String, medicineName: String, dosagePerTake: String, dailyFrequency: Int, durationDays: Int ->
             context.checkAlarmPermissions(onNotificationRequired = {
                 requiredNotificationPermission?.let { notificationLauncher.launch(it) }
             }, onExactAlarmRequired = {
@@ -157,7 +157,7 @@ fun OcrScreen(
                 val existingDetail = uiState.registeredAlarms[medicineName]
                 selectedSoundUri.value = existingDetail?.soundUri
                 pendingAlarmData.value = PendingAlarm(
-                    medicineName, dosagePerTake, dailyFrequency, durationDays
+                    medicineId, medicineName, dosagePerTake, dailyFrequency, durationDays
                 )
             })
         }
@@ -222,6 +222,7 @@ fun OcrScreen(
             },
             onConfirm = { alarmTimes, soundUri ->
                 viewModel.registerMedicineAlarm(
+                    pendingData.medicineId,
                     pendingData.medicineName,
                     pendingData.dosagePerTake,
                     pendingData.dailyFrequency,
@@ -266,7 +267,7 @@ internal fun OcrScreenContent(
     onResetAnalysisClick: () -> Unit,
     onStartAnalysisClick: () -> Unit,
     onCancelAnalysisClick: () -> Unit,
-    onMedicineTextClick: (String) -> Unit, onRegisterAlarmClick: (String, String, Int, Int) -> Unit,
+    onMedicineTextClick: (String) -> Unit, onRegisterAlarmClick: (String, String, String, Int, Int) -> Unit,
     onCancelAlarmClick: (String) -> Unit,
     onToggleCardExpansion: (String) -> Unit,
     onToggleAllCardsExpansion: (Boolean) -> Unit
@@ -344,9 +345,7 @@ internal fun OcrScreenContent(
                             OcrExpansionControls(isAllExpanded, onToggleAllCardsExpansion)
                         }
                     }
-                    itemsIndexed(
-                        result.medicines,
-                        { index, medicine -> "${medicine.name ?: "medicine"}_$index" }) { _, medicine ->
+                    items(result.medicines, key = { it.id }) { medicine ->
                         val name = medicine.name ?: unknownMedicineLabel
                         val alarm = uiState.registeredAlarms[name]
                         val alarmSoundName = if (alarm != null) {
@@ -362,8 +361,8 @@ internal fun OcrScreenContent(
                             alarm = alarm,
                             alarmSoundName = alarmSoundName,
                             highlightedMedicineName = highlightedMedicineName,
-                            isCardExpanded = uiState.cardExpansionMap[name] ?: true,
-                            onToggleExpansionClick = { onToggleCardExpansion(name) },
+                            isCardExpanded = uiState.cardExpansionMap[medicine.id] ?: true,
+                            onToggleExpansionClick = { onToggleCardExpansion(medicine.id) },
                             onRegisterAlarmClick = onRegisterAlarmClick,
                             onCancelAlarmClick = onCancelAlarmClick
                         )

@@ -41,6 +41,7 @@ data class OcrUiState(
 }
 
 data class PendingAlarm(
+    val medicineId: String,
     val medicineName: String,
     val dosagePerTake: String,
     val dailyFrequency: Int,
