@@ -5,6 +5,7 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Matrix
 import android.net.Uri
+import android.util.Log
 import androidx.core.graphics.scale
 import androidx.exifinterface.media.ExifInterface
 import com.example.yakallim.domain.image.ImageProcessor
@@ -37,11 +38,18 @@ class ImageProcessorImpl @Inject constructor(
                 else -> 0
             }
 
-            var bitmap = BitmapFactory.decodeFile(file.absolutePath) ?: return@withContext file
+            val maxDimension = 1920
+
+            // 원본 전체를 메모리에 올리지 않고 크기만 먼저 확인한 뒤, 필요한 만큼만 축소 디코딩한다.
+            val boundsOptions = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+            BitmapFactory.decodeFile(file.absolutePath, boundsOptions)
+
+            val decodeOptions = BitmapFactory.Options().apply {
+                inSampleSize = calculateInSampleSize(boundsOptions.outWidth, boundsOptions.outHeight, maxDimension)
+            }
+            var bitmap = BitmapFactory.decodeFile(file.absolutePath, decodeOptions) ?: return@withContext file
             val width = bitmap.width
             val height = bitmap.height
-
-            val maxDimension = 1920
 
             if (width > maxDimension || height > maxDimension) {
                 val newWidth: Int
@@ -74,16 +82,14 @@ class ImageProcessorImpl @Inject constructor(
             }
 
             val processedFile = File(context.cacheDir, "ocr_processed_${UUID.randomUUID()}.jpg")
-            val outputStream = FileOutputStream(processedFile)
-
-            bitmap.compress(Bitmap.CompressFormat.JPEG, 80, outputStream)
-            outputStream.flush()
-            outputStream.close()
+            FileOutputStream(processedFile).use { outputStream ->
+                bitmap.compress(Bitmap.CompressFormat.JPEG, 80, outputStream)
+            }
             bitmap.recycle()
 
             processedFile
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e(TAG, "이미지 전처리 실패", e)
             file
         }
     }
@@ -94,17 +100,16 @@ class ImageProcessorImpl @Inject constructor(
             val inputStream: InputStream =
                 contentResolver.openInputStream(uri) ?: return@withContext null
             val file = File(context.cacheDir, "ocr_img_${UUID.randomUUID()}.jpg")
-            val outputStream = FileOutputStream(file)
 
             inputStream.use { input ->
-                outputStream.use { output ->
+                FileOutputStream(file).use { output ->
                     input.copyTo(output)
                 }
             }
 
             file
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e(TAG, "URI로부터 파일 생성 실패", e)
             null
         }
     }
@@ -112,17 +117,35 @@ class ImageProcessorImpl @Inject constructor(
     override suspend fun bitmapToFile(bitmap: Bitmap): File? = withContext(Dispatchers.IO) {
         try {
             val file = File(context.cacheDir, "ocr_img_${UUID.randomUUID()}.jpg")
-            val outputStream = FileOutputStream(file)
 
-            bitmap.compress(Bitmap.CompressFormat.JPEG, 90, outputStream)
-
-            outputStream.flush()
-            outputStream.close()
+            FileOutputStream(file).use { outputStream ->
+                bitmap.compress(Bitmap.CompressFormat.JPEG, 90, outputStream)
+            }
 
             file
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e(TAG, "Bitmap 파일 저장 실패", e)
             null
         }
     }
+
+    companion object {
+        private const val TAG = "ImageProcessorImpl"
+    }
+}
+
+/**
+ * [width]x[height] 원본을 [maxDimension] 근처까지 줄이기 위한 [BitmapFactory.Options.inSampleSize] 값을 계산한다.
+ * 2의 거듭제곱 단위로만 축소되므로, 이후 정확한 목표 크기로의 추가 축소가 필요할 수 있다.
+ */
+internal fun calculateInSampleSize(width: Int, height: Int, maxDimension: Int): Int {
+    var w = width
+    var h = height
+    var sample = 1
+    while (maxOf(w, h) / 2 >= maxDimension) {
+        w /= 2
+        h /= 2
+        sample *= 2
+    }
+    return sample
 }
