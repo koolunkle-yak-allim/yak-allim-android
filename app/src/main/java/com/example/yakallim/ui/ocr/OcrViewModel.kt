@@ -9,25 +9,23 @@ import androidx.lifecycle.viewModelScope
 import com.example.yakallim.R
 import com.example.yakallim.domain.notification.PushNotificationObserver
 import com.example.yakallim.domain.usecase.RequestPrescriptionUseCase
-import com.example.yakallim.domain.usecase.CancelAlarmUseCase
 import com.example.yakallim.domain.usecase.CancelPrescriptionUseCase
 import com.example.yakallim.domain.usecase.ClearLastPrescriptionUseCase
-import com.example.yakallim.domain.usecase.GetActiveAlarmsUseCase
 import com.example.yakallim.domain.usecase.GetCachedImageUriUseCase
 import com.example.yakallim.domain.usecase.GetPrescriptionResultUseCase
 import com.example.yakallim.domain.usecase.GetLastPrescriptionUseCase
 import com.example.yakallim.domain.usecase.GetPendingPrescriptionUseCase
 import com.example.yakallim.domain.usecase.PrepareImageUseCase
-import com.example.yakallim.domain.usecase.ScheduleAlarmUseCase
 import com.example.yakallim.domain.usecase.ObserveProgressUseCase
-import com.example.yakallim.domain.usecase.GetDetailAlarmUseCase
 import com.example.yakallim.domain.model.JobStatus
-import com.example.yakallim.domain.model.Alarm
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
@@ -43,14 +41,10 @@ class OcrViewModel @Inject constructor(
     private val requestPrescriptionUseCase: RequestPrescriptionUseCase,
     private val getPrescriptionResultUseCase: GetPrescriptionResultUseCase,
     private val getPendingPrescriptionUseCase: GetPendingPrescriptionUseCase,
-    private val getActiveAlarmsUseCase: GetActiveAlarmsUseCase,
     private val getLastPrescriptionUseCase: GetLastPrescriptionUseCase,
     private val clearLastPrescriptionUseCase: ClearLastPrescriptionUseCase,
-    private val scheduleAlarmUseCase: ScheduleAlarmUseCase,
-    private val cancelAlarmUseCase: CancelAlarmUseCase,
     private val cancelPrescriptionUseCase: CancelPrescriptionUseCase,
     private val observeProgressUseCase: ObserveProgressUseCase,
-    private val getDetailAlarmUseCase: GetDetailAlarmUseCase,
     private val prepareImageUseCase: PrepareImageUseCase,
     private val getCachedImageUriUseCase: GetCachedImageUriUseCase,
     private val pushNotificationObserver: PushNotificationObserver,
@@ -60,6 +54,10 @@ class OcrViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(OcrUiState())
     val uiState: StateFlow<OcrUiState> = _uiState.asStateFlow()
 
+    /** 새 분석이 실제로 시작될 때(hasImage 검증을 통과한 뒤) 발행된다. 등록된 알람 정리는 AlarmViewModel의 몫이라, 화면이 이 이벤트를 받아 위임한다. */
+    private val _analysisStartedEvents = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+    val analysisStartedEvents: SharedFlow<Unit> = _analysisStartedEvents.asSharedFlow()
+
     private var job: Job? = null
     private var fetchJob: Job? = null
     private var activeJobId: String? = null
@@ -67,7 +65,6 @@ class OcrViewModel @Inject constructor(
     init {
         viewModelScope.launch {
             recoverActiveJob()
-            recoverActiveAlarms()
             _uiState.update { it.copy(isInitialized = true) }
         }
     }
@@ -82,16 +79,6 @@ class OcrViewModel @Inject constructor(
             fetchAnalysisResult(jobId)
         } else if (jobId.isNullOrBlank()) {
             recoverLastPrescription()
-        }
-    }
-
-    private suspend fun recoverActiveAlarms() {
-        val activeAlarms = getActiveAlarmsUseCase()
-        val restoredDetails = activeAlarms.associateWith { medicineName ->
-            getDetailAlarmUseCase(medicineName) ?: Alarm(times = emptyList(), soundUri = null)
-        }
-        _uiState.update { state ->
-            state.copy(registeredAlarms = state.registeredAlarms + restoredDetails)
         }
     }
 
@@ -138,7 +125,6 @@ class OcrViewModel @Inject constructor(
     fun resetAnalysisResult() {
         stopActiveAnalysis()
         activeJobId = null
-        clearAllRegisteredAlarms()
         viewModelScope.launch {
             clearLastPrescriptionUseCase()
         }
@@ -165,10 +151,10 @@ class OcrViewModel @Inject constructor(
             return
         }
 
-        clearAllRegisteredAlarms()
         activeJobId = null
         job?.cancel()
         job = viewModelScope.launch {
+            _analysisStartedEvents.emit(Unit)
             _uiState.update {
                 it.copy(
                     isLoading = true,
@@ -348,69 +334,28 @@ class OcrViewModel @Inject constructor(
         }
     }
 
-    fun registerMedicineAlarm(
+    /** AlarmViewModel이 알람 등록에 성공했을 때, 화면이 이 값으로 처방 카드의 복용 정보 표시를 갱신한다. */
+    fun updateMedicineDosage(
         medicineId: String,
-        medicineName: String,
         dosagePerTake: String,
         dailyFrequency: Int,
-        durationDays: Int,
-        alarmTimes: List<String>,
-        soundUri: String?
+        durationDays: Int
     ) {
-        viewModelScope.launch {
-            try {
-                cancelAlarmUseCase(medicineName)
-            } catch (_: Exception) {}
-
-            val isSuccess = try {
-                scheduleAlarmUseCase(
-                    medicineName,
-                    dosagePerTake,
-                    dailyFrequency,
-                    durationDays,
-                    alarmTimes,
-                    soundUri
-                )
-                true
-            } catch (_: Exception) {
-                false
-            }
-            if (isSuccess) {
-                _uiState.update { state ->
-                    val updatedResult = state.analysisResult?.let { prescription ->
-                        prescription.copy(
-                            medicines = prescription.medicines.map { medicine ->
-                                if (medicine.id == medicineId) {
-                                    medicine.copy(
-                                        dosagePerTake = dosagePerTake,
-                                        dailyFrequency = dailyFrequency,
-                                        durationDays = durationDays
-                                    )
-                                } else medicine
-                            }
-                        )
+        _uiState.update { state ->
+            val updatedResult = state.analysisResult?.let { prescription ->
+                prescription.copy(
+                    medicines = prescription.medicines.map { medicine ->
+                        if (medicine.id == medicineId) {
+                            medicine.copy(
+                                dosagePerTake = dosagePerTake,
+                                dailyFrequency = dailyFrequency,
+                                durationDays = durationDays
+                            )
+                        } else medicine
                     }
-                    state.copy(
-                        registeredAlarms = state.registeredAlarms + (medicineName to Alarm(alarmTimes, soundUri)),
-                        analysisResult = updatedResult
-                    )
-                }
-            } else {
-                _uiState.update {
-                    it.copy(error = OcrError.Unknown(context.getString(R.string.error_alarm_registration_failed)))
-                }
-            }
-        }
-    }
-
-    fun unregisterMedicineAlarm(medicineName: String) {
-        viewModelScope.launch {
-            cancelAlarmUseCase(medicineName)
-            _uiState.update {
-                it.copy(
-                    registeredAlarms = it.registeredAlarms - medicineName
                 )
             }
+            state.copy(analysisResult = updatedResult)
         }
     }
 
@@ -458,15 +403,4 @@ class OcrViewModel @Inject constructor(
         }
     }
 
-    private fun clearAllRegisteredAlarms() {
-        val alarms = _uiState.value.registeredAlarms.keys
-        if (alarms.isNotEmpty()) {
-            viewModelScope.launch {
-                alarms.forEach { medicineName ->
-                    cancelAlarmUseCase(medicineName)
-                }
-                _uiState.update { it.copy(registeredAlarms = emptyMap()) }
-            }
-        }
-    }
 }
