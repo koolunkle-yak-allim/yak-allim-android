@@ -7,16 +7,17 @@ import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.yakallim.R
-import com.example.yakallim.data.infrastructure.image.ImageProcessor
 import com.example.yakallim.domain.notification.PushNotificationObserver
 import com.example.yakallim.domain.usecase.RequestPrescriptionUseCase
 import com.example.yakallim.domain.usecase.CancelAlarmUseCase
 import com.example.yakallim.domain.usecase.CancelPrescriptionUseCase
 import com.example.yakallim.domain.usecase.ClearLastPrescriptionUseCase
 import com.example.yakallim.domain.usecase.GetActiveAlarmsUseCase
+import com.example.yakallim.domain.usecase.GetCachedImageUriUseCase
 import com.example.yakallim.domain.usecase.GetPrescriptionResultUseCase
 import com.example.yakallim.domain.usecase.GetLastPrescriptionUseCase
 import com.example.yakallim.domain.usecase.GetPendingPrescriptionUseCase
+import com.example.yakallim.domain.usecase.PrepareImageUseCase
 import com.example.yakallim.domain.usecase.ScheduleAlarmUseCase
 import com.example.yakallim.domain.usecase.ObserveProgressUseCase
 import com.example.yakallim.domain.usecase.GetDetailAlarmUseCase
@@ -30,10 +31,11 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.CancellationException
-import java.io.File
 import javax.inject.Inject
 
 @HiltViewModel
@@ -49,7 +51,8 @@ class OcrViewModel @Inject constructor(
     private val cancelPrescriptionUseCase: CancelPrescriptionUseCase,
     private val observeProgressUseCase: ObserveProgressUseCase,
     private val getDetailAlarmUseCase: GetDetailAlarmUseCase,
-    private val imageProcessor: ImageProcessor,
+    private val prepareImageUseCase: PrepareImageUseCase,
+    private val getCachedImageUriUseCase: GetCachedImageUriUseCase,
     private val pushNotificationObserver: PushNotificationObserver,
     @param:ApplicationContext private val context: Context
 ) : ViewModel() {
@@ -95,11 +98,10 @@ class OcrViewModel @Inject constructor(
     private suspend fun recoverLastPrescription() {
         val lastPrescription = getLastPrescriptionUseCase()
         if (lastPrescription != null) {
-            val cacheFile = File(context.cacheDir, "ocr_image_last.jpg")
-            val restoredUri = if (cacheFile.exists()) Uri.fromFile(cacheFile) else null
+            val restoredUri = getCachedImageUriUseCase.last()
             _uiState.update { state ->
                 val initialExpanded = lastPrescription.medicines.associate { medicine ->
-                    (medicine.name ?: context.getString(R.string.error_unknown_medicine)) to false
+                    medicine.id to false
                 }
                 state.copy(
                     analysisResult = lastPrescription,
@@ -183,8 +185,8 @@ class OcrViewModel @Inject constructor(
             }
 
             val file = when (val image = currentState.selectedImage) {
-                is OcrImage.UriSource -> imageProcessor.uriToFile(image.uri)
-                is OcrImage.BitmapSource -> imageProcessor.bitmapToFile(image.bitmap)
+                is OcrImage.UriSource -> prepareImageUseCase.fromUri(image.uri)
+                is OcrImage.BitmapSource -> prepareImageUseCase.fromBitmap(image.bitmap)
                 null -> null
             }
             if (file == null) {
@@ -218,35 +220,43 @@ class OcrViewModel @Inject constructor(
                 )
             }
 
-            var isOcrCompleted = false
-            try {
-                observeProgressUseCase(jobId).collect { progress ->
-                    _uiState.update { state ->
-                        state.copy(
-                            progress = state.progress?.copy(
-                                jobStatus = progress.jobStatus,
-                                percent = progress.percent,
-                                message = progress.message
+            val finalProgress = try {
+                observeProgressUseCase(jobId)
+                    .onEach { progress ->
+                        _uiState.update { state ->
+                            val currentProgress = state.progress
+                            state.copy(
+                                progress = currentProgress?.copy(
+                                    jobStatus = if (progress.jobStatus == JobStatus.UNKNOWN) {
+                                        currentProgress.jobStatus
+                                    } else {
+                                        progress.jobStatus
+                                    },
+                                    percent = progress.percent,
+                                    message = progress.message
+                                )
                             )
+                        }
+                    }
+                    .firstOrNull { it.isFinished }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                null
+            }
+
+            val isOcrCompleted = finalProgress != null
+            if (finalProgress != null) {
+                if (finalProgress.jobStatus == JobStatus.COMPLETED) {
+                    fetchAnalysisResult(jobId)
+                } else {
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            error = OcrError.AnalysisFailed
                         )
                     }
-                    if (progress.isFinished) {
-                        isOcrCompleted = true
-                        if (progress.jobStatus == JobStatus.COMPLETED) {
-                            fetchAnalysisResult(jobId)
-                        } else {
-                            _uiState.update {
-                                it.copy(
-                                    isLoading = false,
-                                    error = OcrError.AnalysisFailed
-                                )
-                            }
-                        }
-                        throw CancellationException("Progress finished")
-                    }
                 }
-            } catch (e: Exception) {
-                if (e is CancellationException) throw e
             }
 
             if (!isOcrCompleted) {
@@ -300,8 +310,7 @@ class OcrViewModel @Inject constructor(
         fetchJob = viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null) }
 
-            val cacheFile = File(context.cacheDir, "ocr_image_$jobId.jpg")
-            val restoredUri = if (cacheFile.exists()) Uri.fromFile(cacheFile) else null
+            val restoredUri = getCachedImageUriUseCase(jobId)
 
             getPrescriptionResultUseCase(jobId).collect { result ->
                 result.onSuccess { analysisResult ->
@@ -309,9 +318,7 @@ class OcrViewModel @Inject constructor(
 
                     _uiState.update { state ->
                         val initialExpanded = if (isValid) {
-                            analysisResult.medicines.associate { medicine ->
-                                (medicine.name ?: context.getString(R.string.error_unknown_medicine)) to false
-                            }
+                            analysisResult.medicines.associate { medicine -> medicine.id to false }
                         } else emptyMap()
                         
                         state.copy(
@@ -342,6 +349,7 @@ class OcrViewModel @Inject constructor(
     }
 
     fun registerMedicineAlarm(
+        medicineId: String,
         medicineName: String,
         dosagePerTake: String,
         dailyFrequency: Int,
@@ -372,7 +380,7 @@ class OcrViewModel @Inject constructor(
                     val updatedResult = state.analysisResult?.let { prescription ->
                         prescription.copy(
                             medicines = prescription.medicines.map { medicine ->
-                                if ((medicine.name ?: context.getString(R.string.error_unknown_medicine)) == medicineName) {
+                                if (medicine.id == medicineId) {
                                     medicine.copy(
                                         dosagePerTake = dosagePerTake,
                                         dailyFrequency = dailyFrequency,
@@ -386,6 +394,10 @@ class OcrViewModel @Inject constructor(
                         registeredAlarms = state.registeredAlarms + (medicineName to Alarm(alarmTimes, soundUri)),
                         analysisResult = updatedResult
                     )
+                }
+            } else {
+                _uiState.update {
+                    it.copy(error = OcrError.Unknown(context.getString(R.string.error_alarm_registration_failed)))
                 }
             }
         }
@@ -413,17 +425,17 @@ class OcrViewModel @Inject constructor(
         }
     }
 
-    fun toggleCardExpansion(medicineName: String) {
+    fun toggleCardExpansion(medicineId: String) {
         _uiState.update {
-            val current = it.cardExpansionMap[medicineName] ?: false
-            it.copy(cardExpansionMap = it.cardExpansionMap + (medicineName to !current))
+            val current = it.cardExpansionMap[medicineId] ?: false
+            it.copy(cardExpansionMap = it.cardExpansionMap + (medicineId to !current))
         }
     }
 
     fun setAllCardsExpansion(expanded: Boolean) {
         _uiState.update { state ->
             val newExpanded = state.analysisResult?.medicines?.associate { medicine ->
-                (medicine.name ?: context.getString(R.string.error_unknown_medicine)) to expanded
+                medicine.id to expanded
             } ?: emptyMap()
             state.copy(cardExpansionMap = newExpanded)
         }

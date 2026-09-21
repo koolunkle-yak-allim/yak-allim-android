@@ -14,4 +14,5 @@ interface AlarmScheduler {
     suspend fun cancel(medicineName: String)
     suspend fun getActiveAlarm(): Set<String>
     suspend fun getDetailAlarm(medicineName: String): Alarm?
+    suspend fun rescheduleAll()
 }

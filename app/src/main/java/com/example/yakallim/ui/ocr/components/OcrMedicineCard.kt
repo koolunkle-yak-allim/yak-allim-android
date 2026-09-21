@@ -75,7 +75,7 @@ fun OcrMedicineCard(
     highlightedMedicineName: String?,
     isCardExpanded: Boolean,
     onToggleExpansionClick: () -> Unit,
-    onRegisterAlarmClick: (String, String, Int, Int) -> Unit,
+    onRegisterAlarmClick: (String, String, String, Int, Int) -> Unit,
     onCancelAlarmClick: (String) -> Unit,
 ) {
     val medicineName = medicineInfo.name ?: stringResource(R.string.error_unknown_medicine)
@@ -237,6 +237,7 @@ fun OcrMedicineCard(
                             Button(
                                 onClick = {
                                     onRegisterAlarmClick(
+                                        medicineInfo.id,
                                         medicineName,
                                         "$dosagePerTake$dosageUnit",
                                         frequency.toIntOrNull() ?: 0,
@@ -370,6 +371,7 @@ fun OcrMedicineCard(
                         Button(
                             onClick = {
                                 onRegisterAlarmClick(
+                                    medicineInfo.id,
                                     medicineName,
                                     "$dosagePerTake$dosageUnit",
                                     frequency.toIntOrNull() ?: 0,
@@ -411,6 +413,7 @@ fun OcrMedicineCard(
                     Button(
                         onClick = {
                             onRegisterAlarmClick(
+                                medicineInfo.id,
                                 medicineName,
                                 "$dosagePerTake$dosageUnit",
                                 frequency.toIntOrNull() ?: 0,

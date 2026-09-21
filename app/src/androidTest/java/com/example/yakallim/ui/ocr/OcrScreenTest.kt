@@ -50,7 +50,7 @@ class OcrScreenTest {
                 onStartAnalysisClick = {},
                 onCancelAnalysisClick = {},
                 onMedicineTextClick = {},
-                onRegisterAlarmClick = { _, _, _, _ -> },
+                onRegisterAlarmClick = { _, _, _, _, _ -> },
                 onCancelAlarmClick = {},
                 onToggleCardExpansion = {},
                 onToggleAllCardsExpansion = {}
@@ -62,12 +62,14 @@ class OcrScreenTest {
     fun ocrScreen_withDuplicateMedicineNames_shouldNotCrash() {
         val duplicateMedicines = listOf(
             PrescribedMedicine(
+                id = "medicine-1",
                 name = "타이레놀",
                 dosagePerTake = "1",
                 dailyFrequency = 3,
                 durationDays = 3
             ),
             PrescribedMedicine(
+                id = "medicine-2",
                 name = "타이레놀",
                 dosagePerTake = "2",
                 dailyFrequency = 2,
@@ -82,12 +84,14 @@ class OcrScreenTest {
     fun ocrScreen_withDuplicateMedicineNames_rendersACardForEveryMedicine() {
         val duplicateMedicines = listOf(
             PrescribedMedicine(
+                id = "medicine-1",
                 name = "타이레놀",
                 dosagePerTake = "1",
                 dailyFrequency = 3,
                 durationDays = 3
             ),
             PrescribedMedicine(
+                id = "medicine-2",
                 name = "타이레놀",
                 dosagePerTake = "2",
                 dailyFrequency = 2,
@@ -108,6 +112,7 @@ class OcrScreenTest {
     fun ocrScreen_withThreeMedicinesSharingTheSameName_rendersThreeCards() {
         val triplicateMedicines = List(3) { index ->
             PrescribedMedicine(
+                id = "medicine-$index",
                 name = "이지엔6",
                 dosagePerTake = "${index + 1}",
                 dailyFrequency = 2,
@@ -125,12 +130,14 @@ class OcrScreenTest {
     fun ocrScreen_withMultipleUnnamedMedicines_shouldNotCrashAndRendersFallbackLabelForEach() {
         val unnamedMedicines = listOf(
             PrescribedMedicine(
+                id = "medicine-1",
                 name = null,
                 dosagePerTake = "1",
                 dailyFrequency = 1,
                 durationDays = 1
             ),
             PrescribedMedicine(
+                id = "medicine-2",
                 name = null,
                 dosagePerTake = "2",
                 dailyFrequency = 2,
@@ -140,8 +147,8 @@ class OcrScreenTest {
 
         setOcrScreenContent(medicines = unnamedMedicines)
 
-        // Both entries fall back to the same unknown-medicine label, so the index-based key
-        // ("medicine_0", "medicine_1") must still keep both cards distinct and rendered.
+        // Both entries fall back to the same unknown-medicine label, so the stable per-medicine
+        // id must still keep both cards distinct and rendered.
         composeTestRule.onAllNodesWithText(unknownMedicineLabel, useUnmergedTree = true)
             .assertCountEquals(2)
     }
@@ -150,12 +157,14 @@ class OcrScreenTest {
     fun ocrScreen_withUniqueMedicineNames_rendersEachCardExactlyOnce() {
         val uniqueMedicines = listOf(
             PrescribedMedicine(
+                id = "medicine-1",
                 name = "타이레놀",
                 dosagePerTake = "1",
                 dailyFrequency = 3,
                 durationDays = 3
             ),
             PrescribedMedicine(
+                id = "medicine-2",
                 name = "게보린",
                 dosagePerTake = "2",
                 dailyFrequency = 2,
@@ -171,7 +180,7 @@ class OcrScreenTest {
 
     @Test
     fun ocrScreen_withEmptyMedicinesList_shouldNotCrash() {
-        // Edge case for the itemsIndexed key lambda: an empty list must not be evaluated
+        // Edge case for the key lambda: an empty list must not be evaluated
         // and must not crash the LazyColumn.
         setOcrScreenContent(medicines = emptyList())
     }
