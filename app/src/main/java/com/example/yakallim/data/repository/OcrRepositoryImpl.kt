@@ -1,11 +1,12 @@
 package com.example.yakallim.data.repository
 
 import android.content.Context
+import android.net.Uri
 import android.util.Log
 import com.example.yakallim.data.datasource.local.OcrLocalDataSource
 import com.example.yakallim.data.datasource.remote.OcrRemoteDataSource
 import com.example.yakallim.data.datasource.remote.dto.OcrResponse
-import com.example.yakallim.data.infrastructure.image.ImageProcessor
+import com.example.yakallim.domain.image.ImageProcessor
 import com.example.yakallim.data.mapper.toDomain
 import com.example.yakallim.domain.model.Progress
 import com.example.yakallim.domain.model.Prescription
@@ -119,5 +120,15 @@ class OcrRepositoryImpl @Inject constructor(
 
     override fun observeOcrProgress(jobId: String): Flow<Progress> {
         return ocrRemoteDataSource.observeOcrProgress(jobId)
+    }
+
+    override fun getCachedImageUri(jobId: String): Uri? {
+        val cacheFile = File(context.cacheDir, "ocr_image_$jobId.jpg")
+        return cacheFile.takeIf { it.exists() }?.let { Uri.fromFile(it) }
+    }
+
+    override fun getLastCachedImageUri(): Uri? {
+        val cacheFile = File(context.cacheDir, "ocr_image_last.jpg")
+        return cacheFile.takeIf { it.exists() }?.let { Uri.fromFile(it) }
     }
 }
