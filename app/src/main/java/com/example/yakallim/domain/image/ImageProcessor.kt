@@ -1,4 +1,4 @@
-package com.example.yakallim.data.infrastructure.image
+package com.example.yakallim.domain.image
 
 import android.graphics.Bitmap
 import android.net.Uri

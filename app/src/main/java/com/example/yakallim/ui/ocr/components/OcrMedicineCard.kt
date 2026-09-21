@@ -75,7 +75,7 @@ fun OcrMedicineCard(
     highlightedMedicineName: String?,
     isCardExpanded: Boolean,
     onToggleExpansionClick: () -> Unit,
-    onRegisterAlarmClick: (String, String, Int, Int) -> Unit,
+    onRegisterAlarmClick: (String, String, String, Int, Int) -> Unit,
     onCancelAlarmClick: (String) -> Unit,
 ) {
     val medicineName = medicineInfo.name ?: stringResource(R.string.error_unknown_medicine)
@@ -102,21 +102,39 @@ fun OcrMedicineCard(
     )
 
     var dosagePerTake by remember(medicineInfo.name) {
-        mutableStateOf(medicineInfo.dosagePerTake.filter { (it.isDigit() || it == '.') }.ifEmpty { "1" })
+        mutableStateOf(medicineInfo.dosagePerTake.orEmpty().filter { (it.isDigit() || it == '.') })
     }
     val defaultDosageUnit = stringResource(R.string.ocr_unit_tablet)
     var dosageUnit by remember(medicineInfo.name) {
-        mutableStateOf(medicineInfo.dosagePerTake.filter { !it.isDigit() && it != '.' }.trim().ifEmpty { defaultDosageUnit })
+        mutableStateOf(medicineInfo.dosagePerTake.orEmpty().filter { !it.isDigit() && it != '.' }.trim().ifEmpty { defaultDosageUnit })
     }
-    var frequency by remember(medicineInfo.name) { mutableStateOf(medicineInfo.dailyFrequency.toString()) }
-    var durationDays by remember(medicineInfo.name) { mutableStateOf(medicineInfo.durationDays.toString()) }
+    var frequency by remember(medicineInfo.name) { mutableStateOf(medicineInfo.dailyFrequency?.toString().orEmpty()) }
+    var durationDays by remember(medicineInfo.name) { mutableStateOf(medicineInfo.durationDays?.toString().orEmpty()) }
 
-    val combinedDescription = stringResource(
-        R.string.alarm_card_format,
-        frequency.toIntOrNull() ?: medicineInfo.dailyFrequency,
-        durationDays.toIntOrNull() ?: medicineInfo.durationDays,
-        "${dosagePerTake.ifBlank { "1" }}$dosageUnit"
-    )
+    val isDosageInfoComplete = dosagePerTake.isNotBlank() &&
+        (frequency.toIntOrNull() ?: 0) > 0 &&
+        (durationDays.toIntOrNull() ?: 0) > 0
+
+    val combinedDescription = if (isDosageInfoComplete) {
+        stringResource(
+            R.string.alarm_card_format,
+            frequency.toIntOrNull() ?: 0,
+            durationDays.toIntOrNull() ?: 0,
+            "$dosagePerTake$dosageUnit"
+        )
+    } else {
+        stringResource(R.string.prescription_confirmation_required)
+    }
+
+    val registerAlarm = {
+        onRegisterAlarmClick(
+            medicineInfo.id,
+            medicineName,
+            "$dosagePerTake$dosageUnit",
+            frequency.toIntOrNull() ?: 0,
+            durationDays.toIntOrNull() ?: 0
+        )
+    }
 
     val interactionSource = remember { MutableInteractionSource() }
 
@@ -255,12 +273,7 @@ fun OcrMedicineCard(
                         } else {
                             Button(
                                 onClick = {
-                                    onRegisterAlarmClick(
-                                        medicineName,
-                                        "$dosagePerTake$dosageUnit",
-                                        frequency.toIntOrNull() ?: 0,
-                                        durationDays.toIntOrNull() ?: 0
-                                    )
+                                    if (isDosageInfoComplete) registerAlarm() else onToggleExpansionClick()
                                 },
                                 modifier = Modifier.height(height = 36.dp),
                                 shape = RoundedCornerShape(size = 12.dp),
@@ -323,6 +336,13 @@ fun OcrMedicineCard(
                         modifier = Modifier.weight(1f),
                         borderColor = animatedInternalBorderColor,
                         isAlarmRegistered = isAlarmRegistered
+                    )
+                }
+                if (!isDosageInfoComplete) {
+                    Text(
+                        text = stringResource(R.string.alarm_dosage_info_required),
+                        color = Warning,
+                        style = MaterialTheme.typography.bodySmall
                     )
                 }
                 Surface(
@@ -395,14 +415,8 @@ fun OcrMedicineCard(
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         Button(
-                            onClick = {
-                                onRegisterAlarmClick(
-                                    medicineName,
-                                    "$dosagePerTake$dosageUnit",
-                                    frequency.toIntOrNull() ?: 0,
-                                    durationDays.toIntOrNull() ?: 0
-                                )
-                            },
+                            onClick = registerAlarm,
+                            enabled = isDosageInfoComplete,
                             modifier = Modifier
                                 .weight(1f)
                                 .height(height = 48.dp),
@@ -436,14 +450,8 @@ fun OcrMedicineCard(
                     }
                 } else {
                     Button(
-                        onClick = {
-                            onRegisterAlarmClick(
-                                medicineName,
-                                "$dosagePerTake$dosageUnit",
-                                frequency.toIntOrNull() ?: 0,
-                                durationDays.toIntOrNull() ?: 0
-                            )
-                        },
+                        onClick = registerAlarm,
+                        enabled = isDosageInfoComplete,
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(height = 48.dp),

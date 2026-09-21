@@ -3,8 +3,8 @@ package com.example.yakallim.di
 import android.content.Context
 import com.example.yakallim.data.datasource.local.OcrLocalDataSource
 import com.example.yakallim.data.datasource.remote.OcrRemoteDataSource
-import com.example.yakallim.data.infrastructure.image.ImageProcessor
 import com.example.yakallim.data.repository.OcrRepositoryImpl
+import com.example.yakallim.domain.image.ImageProcessor
 import com.example.yakallim.domain.notification.PushTokenProvider
 import com.example.yakallim.domain.repository.OcrRepository
 import dagger.Module

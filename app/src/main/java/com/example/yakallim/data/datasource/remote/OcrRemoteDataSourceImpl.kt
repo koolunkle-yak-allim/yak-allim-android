@@ -1,11 +1,12 @@
 package com.example.yakallim.data.datasource.remote
 
+import android.util.Log
 import com.example.yakallim.BuildConfig
 import com.example.yakallim.data.datasource.remote.api.OcrApiService
 import com.example.yakallim.data.datasource.remote.dto.OcrJobResponse
 import com.example.yakallim.data.datasource.remote.dto.OcrProgressResponse
+import com.example.yakallim.data.mapper.toDomain
 import com.example.yakallim.di.SseClient
-import com.example.yakallim.domain.model.JobStatus
 import com.example.yakallim.domain.model.Progress
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
@@ -65,22 +66,9 @@ class OcrRemoteDataSourceImpl @Inject constructor(
                 if (type == null || type == "progress" || type == "message") {
                     try {
                         val progressResponse = json.decodeFromString<OcrProgressResponse>(data)
-                        val stepStr = progressResponse.step ?: ""
-                        val domainJobStatus = try {
-                            JobStatus.valueOf(stepStr)
-                        } catch (_: IllegalArgumentException) {
-                            JobStatus.FAILED
-                        }
-                        val isFinished = progressResponse.isFinished
-                        trySend(
-                            Progress(
-                                jobStatus = domainJobStatus,
-                                message = progressResponse.message ?: "",
-                                percent = progressResponse.progress ?: 0,
-                                isFinished = isFinished
-                            )
-                        )
-                    } catch (_: Exception) {
+                        trySend(progressResponse.toDomain())
+                    } catch (e: Exception) {
+                        Log.w(TAG, "Failed to parse SSE progress event: $data", e)
                     }
                 }
             }
@@ -97,5 +85,9 @@ class OcrRemoteDataSourceImpl @Inject constructor(
         awaitClose {
             eventSource.cancel()
         }
+    }
+
+    companion object {
+        private const val TAG = "OcrRemoteDataSource"
     }
 }
