@@ -7,21 +7,27 @@ import android.content.Intent
 import android.os.Build
 import com.example.yakallim.data.datasource.local.preference.AlarmPreference
 import com.example.yakallim.domain.alarm.AlarmScheduler
+import com.example.yakallim.domain.alarm.AlarmTimeCalculator
 import com.example.yakallim.domain.model.Alarm
+import com.example.yakallim.domain.model.AlarmSpec
 import com.example.yakallim.util.alarmManager
 import dagger.hilt.android.qualifiers.ApplicationContext
-import java.util.Calendar
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
+import java.time.ZoneId
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
 class AlarmSchedulerImpl @Inject constructor(
     @param:ApplicationContext private val context: Context,
-    private val alarmPreference: AlarmPreference
+    private val alarmPreference: AlarmPreference,
+    private val json: Json
 ) : AlarmScheduler {
 
     private val alarmManager = context.alarmManager
         ?: throw IllegalStateException("AlarmManager service is not available")
+    private val zone: ZoneId = ZoneId.systemDefault()
 
     override suspend fun schedule(
         medicineName: String,
@@ -33,79 +39,32 @@ class AlarmSchedulerImpl @Inject constructor(
     ) {
         if (dailyFrequency <= 0 || durationDays <= 0 || alarmTimes.isEmpty()) return
 
-        val totalAlarms = dailyFrequency * durationDays
-        var alarmIndex = 0
+        val spec = AlarmSpec(
+            medicineName = medicineName,
+            dosagePerTake = dosagePerTake,
+            dailyFrequency = dailyFrequency,
+            durationDays = durationDays,
+            alarmTimes = alarmTimes,
+            soundUri = soundUri,
+            startEpochMillis = System.currentTimeMillis()
+        )
 
-        for (day in 0 until durationDays) {
-            for (timeStr in alarmTimes) {
-                if (alarmIndex >= totalAlarms) break
+        armFutureTriggers(spec)
 
-                val calendar = Calendar.getInstance().apply {
-                    timeInMillis = System.currentTimeMillis()
-                    add(Calendar.DAY_OF_YEAR, day)
-
-                    val parts = timeStr.split(":")
-                    val hour = parts.getOrNull(0)?.toIntOrNull() ?: 9
-                    val minute = parts.getOrNull(1)?.toIntOrNull() ?: 0
-
-                    set(Calendar.HOUR_OF_DAY, hour)
-                    set(Calendar.MINUTE, minute)
-                    set(Calendar.SECOND, 0)
-                    set(Calendar.MILLISECOND, 0)
-                }
-
-                val scheduledTimeMillis = calendar.timeInMillis
-                if (scheduledTimeMillis > System.currentTimeMillis()) {
-                    val pendingIntent = createPendingIntent(
-                        medicineName,
-                        dosagePerTake,
-                        dailyFrequency,
-                        durationDays,
-                        alarmIndex,
-                        soundUri
-                    )
-
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                        if (alarmManager.canScheduleExactAlarms()) {
-                            alarmManager.setExactAndAllowWhileIdle(
-                                AlarmManager.RTC_WAKEUP,
-                                scheduledTimeMillis,
-                                pendingIntent
-                            )
-                        } else {
-                            alarmManager.set(
-                                AlarmManager.RTC_WAKEUP,
-                                scheduledTimeMillis,
-                                pendingIntent
-                            )
-                        }
-                    } else {
-                        alarmManager.setExactAndAllowWhileIdle(
-                            AlarmManager.RTC_WAKEUP,
-                            scheduledTimeMillis,
-                            pendingIntent
-                        )
-                    }
-                }
-                alarmIndex++
-            }
-        }
-
-        alarmPreference.saveAlarmCount(medicineName, totalAlarms)
+        alarmPreference.saveAlarmSpecJson(medicineName, json.encodeToString(spec))
         alarmPreference.addActiveAlarmMedicine(medicineName)
-        alarmPreference.saveDetailAlarm(medicineName, alarmTimes, soundUri)
     }
 
     override suspend fun cancel(medicineName: String) {
-        val alarmCount = alarmPreference.getAlarmCount(medicineName)
-        if (alarmCount <= 0) return
+        val spec = loadSpec(medicineName) ?: return
 
-        for (i in 0 until alarmCount) {
-            val intent = Intent(context, AlarmReceiver::class.java)
-            intent.setPackage(context.packageName)
+        AlarmTimeCalculator.allTriggers(spec, zone).forEach { trigger ->
+            val intent = Intent(context, AlarmReceiver::class.java).apply {
+                setPackage(context.packageName)
+            }
+            val requestCode = AlarmTimeCalculator.requestCode(medicineName, trigger.day, trigger.timeIndex)
             val pendingIntent = PendingIntent.getBroadcast(
-                context, generateRequestCode(medicineName, i),
-                intent,
+                context, requestCode, intent,
                 PendingIntent.FLAG_NO_CREATE or PendingIntent.FLAG_IMMUTABLE
             )
             if (pendingIntent != null) {
@@ -114,9 +73,8 @@ class AlarmSchedulerImpl @Inject constructor(
             }
         }
 
-        alarmPreference.removeAlarmCount(medicineName)
+        alarmPreference.removeAlarmSpecJson(medicineName)
         alarmPreference.removeActiveAlarmMedicine(medicineName)
-        alarmPreference.removeDetailAlarm(medicineName)
     }
 
     override suspend fun getActiveAlarm(): Set<String> {
@@ -124,30 +82,54 @@ class AlarmSchedulerImpl @Inject constructor(
     }
 
     override suspend fun getDetailAlarm(medicineName: String): Alarm? {
-        return alarmPreference.getDetailAlarm(medicineName)
+        val spec = loadSpec(medicineName) ?: return null
+        return Alarm(spec.alarmTimes, spec.soundUri)
     }
 
-    private fun generateRequestCode(medicineName: String, index: Int): Int =
-        (medicineName.hashCode() and 0x7FFFFFFF) + index
+    /** 재부팅 등으로 예약이 모두 사라졌을 때, 저장된 모든 활성 알람을 남은 미래 시각 기준으로 다시 건다. */
+    override suspend fun rescheduleAll() {
+        alarmPreference.getActiveAlarmMedicines().forEach { medicineName ->
+            loadSpec(medicineName)?.let { spec -> armFutureTriggers(spec) }
+        }
+    }
 
-    private fun createPendingIntent(
-        medicineName: String,
-        dosagePerTake: String,
-        dailyFrequency: Int,
-        durationDays: Int,
-        index: Int,
-        soundUri: String?
-    ): PendingIntent {
-        val intent = Intent(context, AlarmReceiver::class.java)
-        intent.setPackage(context.packageName)
-        intent.putExtra(AlarmExtraSpec.KEY_MEDICINE_NAME, medicineName)
-        intent.putExtra(AlarmExtraSpec.KEY_DOSAGE_PER_TAKE, dosagePerTake)
-        intent.putExtra(AlarmExtraSpec.KEY_DAILY_FREQUENCY, dailyFrequency)
-        intent.putExtra(AlarmExtraSpec.KEY_DURATION_DAYS, durationDays)
-        intent.putExtra(AlarmExtraSpec.KEY_SOUND_URI, soundUri)
+    private suspend fun loadSpec(medicineName: String): AlarmSpec? {
+        val specJson = alarmPreference.getAlarmSpecJson(medicineName) ?: return null
+        return runCatching { json.decodeFromString<AlarmSpec>(specJson) }.getOrNull()
+    }
+
+    private fun armFutureTriggers(spec: AlarmSpec) {
+        val now = System.currentTimeMillis()
+        AlarmTimeCalculator.triggerTimes(spec, now, zone).forEach { trigger ->
+            scheduleExact(trigger.triggerMillis, createPendingIntent(spec, trigger))
+        }
+    }
+
+    private fun scheduleExact(triggerMillis: Long, pendingIntent: PendingIntent) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            if (alarmManager.canScheduleExactAlarms()) {
+                alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerMillis, pendingIntent)
+            } else {
+                alarmManager.set(AlarmManager.RTC_WAKEUP, triggerMillis, pendingIntent)
+            }
+        } else {
+            alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerMillis, pendingIntent)
+        }
+    }
+
+    private fun createPendingIntent(spec: AlarmSpec, trigger: AlarmTimeCalculator.Trigger): PendingIntent {
+        val intent = Intent(context, AlarmReceiver::class.java).apply {
+            setPackage(context.packageName)
+            putExtra(AlarmExtraSpec.KEY_MEDICINE_NAME, spec.medicineName)
+            putExtra(AlarmExtraSpec.KEY_DOSAGE_PER_TAKE, spec.dosagePerTake)
+            putExtra(AlarmExtraSpec.KEY_DAILY_FREQUENCY, spec.dailyFrequency)
+            putExtra(AlarmExtraSpec.KEY_DURATION_DAYS, spec.durationDays)
+            putExtra(AlarmExtraSpec.KEY_SOUND_URI, spec.soundUri)
+        }
+        val requestCode = AlarmTimeCalculator.requestCode(spec.medicineName, trigger.day, trigger.timeIndex)
         return PendingIntent.getBroadcast(
             context,
-            generateRequestCode(medicineName, index),
+            requestCode,
             intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
