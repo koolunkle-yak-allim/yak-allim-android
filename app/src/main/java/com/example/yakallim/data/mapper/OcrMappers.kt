@@ -9,6 +9,7 @@ import com.example.yakallim.domain.model.PrescribedMedicine
 import com.example.yakallim.domain.model.Prescription
 import com.example.yakallim.domain.model.Progress
 import com.example.yakallim.domain.model.TextBlock
+import java.util.UUID
 
 fun OcrProgressResponse.toDomain(): Progress {
     val jobStatus = when (step) {
@@ -39,6 +40,7 @@ fun OcrResponse.toDomain(): Prescription {
         val matchedConfidence = matchedTextBlock?.confidence ?: 1.0f
 
         PrescribedMedicine(
+            id = UUID.randomUUID().toString(),
             name = medicine.medicineName,
             dosagePerTake = medicine.dosagePerTake ?: "1",
             dailyFrequency = medicine.dailyFrequency ?: 0,

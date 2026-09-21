@@ -40,6 +40,7 @@
     <string name="error_failed_analysis">복약 안내서 분석에 실패했습니다.\n복약 안내서 확인 후 다시 시도해 주세요.</string>
     <string name="error_failed_image_fetched">이미지 파일을 임시 저장 및 불러오는데 실패했습니다.</string>
     <string name="error_failed_image_selected">분석할 이미지를 먼저 선택하거나 촬영해 주세요.</string>
+    <string name="error_alarm_registration_failed">알람 등록에 실패했습니다. 잠시 후 다시 시도해 주세요.</string>
     <string name="error_low_confidence">인식 신뢰도가 낮습니다. 복용법을 직접 확인하세요.</string>
     <string name="error_unknown_medicine">알 수 없는 약품</string>
     <string name="error_cd_icon">오류 표시 아이콘</string>
