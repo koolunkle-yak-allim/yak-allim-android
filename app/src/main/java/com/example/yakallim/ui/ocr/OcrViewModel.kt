@@ -34,6 +34,7 @@ import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.CancellationException
+import retrofit2.HttpException
 import javax.inject.Inject
 
 @HiltViewModel
@@ -317,6 +318,11 @@ class OcrViewModel @Inject constructor(
                     }
                 }.onFailure { exception ->
                     if (exception is CancellationException) throw exception
+                    if (exception.isJobNotFound()) {
+                        // 서버에 더는 존재하지 않는 작업(재배포 등으로 상태 소실)이므로,
+                        // 같은 jobId로의 재조회 대신 다음 재시도가 새 작업 제출로 이어지도록 초기화한다.
+                        activeJobId = null
+                    }
                     _uiState.update {
                         it.copy(
                             isLoading = false,
@@ -393,10 +399,13 @@ class OcrViewModel @Inject constructor(
         }
     }
 
+    private fun Throwable.isJobNotFound(): Boolean = this is HttpException && code() == 404
+
     private fun Throwable.toOcrError(): OcrError {
         val msg = this.localizedMessage ?: ""
         return when {
             this is NoSuchElementException -> OcrError.EmptyResult
+            isJobNotFound() -> OcrError.AnalysisFailed
             msg.contains("timeout", ignoreCase = true) -> OcrError.Timeout
             msg.contains("connect", ignoreCase = true) || msg.contains("network", ignoreCase = true) -> OcrError.Network
             else -> OcrError.Unknown(msg)

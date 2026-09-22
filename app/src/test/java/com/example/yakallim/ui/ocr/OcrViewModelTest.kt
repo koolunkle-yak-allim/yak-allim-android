@@ -26,6 +26,9 @@ import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
+import okhttp3.ResponseBody.Companion.toResponseBody
+import retrofit2.HttpException
+import retrofit2.Response
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runCurrent
@@ -252,5 +255,34 @@ class OcrViewModelTest {
 
         assertEquals(1, eventCount)
         collectorJob.cancel()
+    }
+
+    @Test
+    fun fetchAnalysisResult_whenJobNotFound_clearsActiveJobIdSoRetryStartsNewAnalysis() = runTest {
+        val viewModel = createViewModel()
+        advanceUntilIdle()
+
+        viewModel.onImageSelected(mock<Uri>())
+
+        val notFound = HttpException(Response.error<Any>(404, "".toResponseBody(null)))
+        fakeRepository.resultFlow = flowOf(Result.failure(notFound))
+
+        viewModel.fetchAnalysisResult("job-dead")
+        advanceUntilIdle()
+
+        val stateAfterFailure = viewModel.uiState.value
+        assertFalse(stateAfterFailure.isLoading)
+        assertTrue(stateAfterFailure.error is OcrError.AnalysisFailed)
+
+        // A 404 means the job no longer exists on the server (e.g. wiped by a redeploy), so
+        // retrying must submit a brand-new job instead of re-fetching the dead jobId forever.
+        fakeRepository.progressFlow = flowOf(Progress(JobStatus.COMPLETED, "", 100, true))
+        fakeRepository.resultFlow = flowOf(Result.success(samplePrescription()))
+
+        viewModel.retryAnalysis()
+        advanceUntilIdle()
+
+        assertNotNull(fakeRepository.requestedFile)
+        assertEquals("job-1", fakeRepository.fetchedResultJobIds.last())
     }
 }
