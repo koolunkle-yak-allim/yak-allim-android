@@ -1,6 +1,12 @@
 pipeline {
     agent any
 
+    options {
+        // 배포 파이프라인이 동시에 여러 개 겹쳐 돌면 서버 쪽 블루-그린 전환과
+        // 마찬가지로 자격 증명 파일 복사/빌드 산출물이 서로 덮어쓸 수 있어 직렬화한다.
+        disableConcurrentBuilds()
+    }
+
     // Slack 알림 연동 환경 변수
     environment {
         SLACK_CREDENTIAL_ID = 'slack-bot-token'
@@ -45,8 +51,9 @@ pipeline {
                             sh """
                                 docker run --rm \
                                     --volumes-from yak-allim-jenkins \
+                                    -v yak-allim-android-gradle-cache:/root/.gradle \
                                     -w "${env.WORKSPACE}" \
-                                    thyrlian/android-sdk:latest \
+                                    thyrlian/android-sdk:10.0 \
                                     sh -c "./gradlew ${cleanOption} ${buildTask}"
                             """
                         } else {
