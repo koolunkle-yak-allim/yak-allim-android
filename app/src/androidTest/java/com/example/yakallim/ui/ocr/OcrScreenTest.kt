@@ -25,16 +25,10 @@ class OcrScreenTest {
      * (and any crash) would have occurred. Centralizing the default callback wiring keeps
      * each test focused on the specific [uiState]/[medicines] scenario being verified.
      */
-    private fun setOcrScreenContent(
-        medicines: List<PrescribedMedicine>,
-        highlightedMedicineName: String? = null
-    ) {
+    private fun setOcrScreenContent(medicines: List<PrescribedMedicine>) {
         val uiState = OcrUiState(
             isInitialized = true,
-            analysisResult = Prescription(
-                rawText = "Dummy Raw Text",
-                medicines = medicines
-            )
+            analysisResult = Prescription(medicines = medicines)
         )
 
         composeTestRule.setContent {
@@ -44,7 +38,6 @@ class OcrScreenTest {
                 alarmUiState = AlarmUiState(isInitialized = true),
                 snackbarHostState = remember { SnackbarHostState() },
                 lazyListState = rememberLazyListState(),
-                highlightedMedicineName = highlightedMedicineName,
                 isGuideSheetVisible = false,
                 unknownMedicineLabel = unknownMedicineLabel,
                 onGuideClick = {},
@@ -54,7 +47,6 @@ class OcrScreenTest {
                 onResetAnalysisClick = {},
                 onStartAnalysisClick = {},
                 onCancelAnalysisClick = {},
-                onMedicineTextClick = {},
                 onRegisterAlarmClick = { _, _, _, _, _ -> },
                 onCancelAlarmClick = {},
                 onToggleCardExpansion = {},

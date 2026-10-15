@@ -25,6 +25,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -32,12 +33,10 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.content.IntentCompat
@@ -47,6 +46,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.example.yakallim.R
+import com.example.yakallim.domain.model.JobStatus
 import com.example.yakallim.ui.alarm.AlarmEvent
 import com.example.yakallim.ui.alarm.AlarmUiState
 import com.example.yakallim.ui.alarm.AlarmViewModel
@@ -70,7 +70,6 @@ import com.example.yakallim.util.openExactAlarmSettings
 import com.example.yakallim.util.requiredNotificationPermission
 import com.example.yakallim.util.showToast
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 @Composable
@@ -80,7 +79,6 @@ fun OcrScreen(
     alarmViewModel: AlarmViewModel = hiltViewModel(),
 ) {
     val context = LocalContext.current
-    val density = LocalDensity.current
     val lifecycleOwner = LocalLifecycleOwner.current
 
     val uiState by viewModel.uiState.collectAsState()
@@ -88,9 +86,7 @@ fun OcrScreen(
     val snackbarHostState = remember { SnackbarHostState() }
 
     val lazyListState = rememberLazyListState()
-    val coroutineScope = rememberCoroutineScope()
 
-    val highlightedMedicineName = remember { mutableStateOf<String?>(null) }
     val showCamera = remember { mutableStateOf(false) }
     val showGuideSheet = remember { mutableStateOf(false) }
 
@@ -195,7 +191,6 @@ fun OcrScreen(
         alarmUiState = alarmUiState,
         snackbarHostState = snackbarHostState,
         lazyListState = lazyListState,
-        highlightedMedicineName = highlightedMedicineName.value,
         isGuideSheetVisible = showGuideSheet.value, unknownMedicineLabel = unknownMedicineLabel,
         onGuideClick = { showGuideSheet.value = true },
         onGuideDismissRequest = { showGuideSheet.value = false },
@@ -214,29 +209,6 @@ fun OcrScreen(
         onResetAnalysisClick = {
             viewModel.resetAnalysisResult()
             alarmViewModel.clearAllRegisteredAlarms()
-        },
-        onMedicineTextClick = { name ->
-            val result = uiState.analysisResult
-            val medicines = result?.medicines ?: emptyList()
-            val matchedMedication =
-                medicines.find { (it.name ?: unknownMedicineLabel) == name }
-
-            highlightedMedicineName.value = matchedMedication?.name ?: unknownMedicineLabel
-
-            val index = medicines.indexOf(matchedMedication)
-            if (index != -1) {
-                coroutineScope.launch {
-                    val hasResult = result != null && result.medicines.isNotEmpty()
-                    var target = 1
-
-                    if (!hasResult || uiState.isLoading) target += 2
-                    if (uiState.error != null) target += 1
-                    if (hasResult) target += 1
-
-                    val offset = with(density) { (-16).dp.roundToPx() }
-                    lazyListState.animateScrollToItem(target + index, offset)
-                }
-            }
         },
         onToggleCardExpansion = viewModel::toggleCardExpansion,
         onToggleAllCardsExpansion = viewModel::setAllCardsExpansion
@@ -292,7 +264,6 @@ internal fun OcrScreenContent(
     alarmUiState: AlarmUiState,
     snackbarHostState: SnackbarHostState,
     lazyListState: LazyListState,
-    highlightedMedicineName: String?,
     isGuideSheetVisible: Boolean, unknownMedicineLabel: String,
     onGuideClick: () -> Unit,
     onGuideDismissRequest: () -> Unit,
@@ -301,7 +272,7 @@ internal fun OcrScreenContent(
     onResetAnalysisClick: () -> Unit,
     onStartAnalysisClick: () -> Unit,
     onCancelAnalysisClick: () -> Unit,
-    onMedicineTextClick: (String) -> Unit, onRegisterAlarmClick: (String, String, String, Int, Int) -> Unit,
+    onRegisterAlarmClick: (String, String, String, Int, Int) -> Unit,
     onCancelAlarmClick: (String) -> Unit,
     onToggleCardExpansion: (String) -> Unit,
     onToggleAllCardsExpansion: (Boolean) -> Unit
@@ -346,15 +317,11 @@ internal fun OcrScreenContent(
                         progress = progress.percent,
                         message = progress.message,
                         isSseActive = progress.isSseActive,
+                        isIndeterminate = progress.jobStatus == JobStatus.ANALYZING,
                         onCancelClick = onCancelAnalysisClick
                     )
                 } else {
-                    OcrImageViewer(
-                        image = uiState.selectedImage,
-                        analysisResult = uiState.analysisResult,
-                        registeredAlarmMedicineNames = alarmUiState.registeredAlarms.keys,
-                        onMedicineTextClick = onMedicineTextClick
-                    )
+                    OcrImageViewer(image = uiState.selectedImage)
                 }
             }
 
@@ -377,6 +344,11 @@ internal fun OcrScreenContent(
                     item {
                         Column(verticalArrangement = Arrangement.spacedBy(space = 8.dp)) {
                             OcrResetButton(onResetAnalysisClick)
+                            Text(
+                                text = stringResource(R.string.ocr_result_verify_hint),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                style = MaterialTheme.typography.bodySmall
+                            )
                             OcrExpansionControls(isAllExpanded, onToggleAllCardsExpansion)
                         }
                     }
@@ -395,7 +367,6 @@ internal fun OcrScreenContent(
                             ),
                             alarm = alarm,
                             alarmSoundName = alarmSoundName,
-                            highlightedMedicineName = highlightedMedicineName,
                             isCardExpanded = uiState.cardExpansionMap[medicine.id] ?: true,
                             onToggleExpansionClick = { onToggleCardExpansion(medicine.id) },
                             onRegisterAlarmClick = onRegisterAlarmClick,

@@ -234,13 +234,22 @@ class OcrViewModel @Inject constructor(
 
             val isOcrCompleted = finalProgress != null
             if (finalProgress != null) {
-                if (finalProgress.jobStatus == JobStatus.COMPLETED) {
-                    fetchAnalysisResult(jobId)
-                } else {
-                    _uiState.update {
+                when (finalProgress.jobStatus) {
+                    JobStatus.COMPLETED -> fetchAnalysisResult(jobId)
+                    JobStatus.CANCELLED -> _uiState.update {
                         it.copy(
                             isLoading = false,
-                            error = OcrError.AnalysisFailed
+                            error = OcrError.Unknown(context.getString(R.string.ocr_status_cancelled)),
+                            progress = null
+                        )
+                    }
+                    // 서버는 실패 시 사용자에게 그대로 보여줄 수 있는 메시지를 보낸다.
+                    else -> _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            error = finalProgress.message.takeIf { message -> message.isNotBlank() }
+                                ?.let { message -> OcrError.ServerError(message) }
+                                ?: OcrError.AnalysisFailed
                         )
                     }
                 }

@@ -82,7 +82,6 @@ class OcrViewModelTest {
     }
 
     private fun samplePrescription() = Prescription(
-        rawText = "타이레놀정 1정 1일 3회 5일분",
         medicines = listOf(
             PrescribedMedicine(
                 id = "medicine-1",
@@ -101,7 +100,7 @@ class OcrViewModelTest {
 
         fakeRepository.progressFlow = flowOf(
             Progress(JobStatus.ENQUEUED, "", 10, false),
-            Progress(JobStatus.TEXT_DETECTION, "", 50, false),
+            Progress(JobStatus.ANALYZING, "", 30, false),
             Progress(JobStatus.COMPLETED, "", 100, true)
         )
         fakeRepository.resultFlow = flowOf(Result.success(samplePrescription()))
@@ -115,6 +114,46 @@ class OcrViewModelTest {
         assertNull(state.error)
         assertEquals(1, state.analysisResult?.medicines?.size)
         assertEquals("job-1", fakeRepository.fetchedResultJobIds.last())
+    }
+
+    @Test
+    fun onAnalysisRequested_whenSseReportsFailedWithMessage_showsServerMessage() = runTest {
+        val viewModel = createViewModel()
+        advanceUntilIdle()
+
+        fakeRepository.progressFlow = flowOf(
+            Progress(JobStatus.ANALYZING, "", 30, false),
+            Progress(JobStatus.FAILED, "복약 안내서를 분석하지 못했습니다.", 100, true)
+        )
+
+        viewModel.onImageSelected(mock<Uri>())
+        viewModel.onAnalysisRequested()
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertFalse(state.isLoading)
+        assertEquals(OcrError.ServerError("복약 안내서를 분석하지 못했습니다."), state.error)
+    }
+
+    @Test
+    fun onAnalysisRequested_whenSseReportsCancelled_showsCancelledInsteadOfFailure() = runTest {
+        val viewModel = createViewModel()
+        advanceUntilIdle()
+
+        fakeRepository.progressFlow = flowOf(
+            Progress(JobStatus.ANALYZING, "", 30, false),
+            Progress(JobStatus.CANCELLED, "작업이 취소되었습니다.", 100, true)
+        )
+
+        viewModel.onImageSelected(mock<Uri>())
+        viewModel.onAnalysisRequested()
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertFalse(state.isLoading)
+        assertTrue(state.error is OcrError.Unknown)
+        assertNull(state.progress)
+        assertTrue(fakeRepository.fetchedResultJobIds.isEmpty())
     }
 
     @Test
