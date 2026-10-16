@@ -1,11 +1,7 @@
 package com.example.yakallim.ui.ocr.components
 
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.animateContentSize
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -27,7 +23,6 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ExpandLess
-import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -72,15 +67,12 @@ fun OcrMedicineCard(
     isAlarmRegistered: Boolean,
     alarm: Alarm?,
     alarmSoundName: String,
-    highlightedMedicineName: String?,
     isCardExpanded: Boolean,
     onToggleExpansionClick: () -> Unit,
     onRegisterAlarmClick: (String, String, String, Int, Int) -> Unit,
     onCancelAlarmClick: (String) -> Unit,
 ) {
     val medicineName = medicineInfo.name ?: stringResource(R.string.error_unknown_medicine)
-    val isHighlighted = highlightedMedicineName == medicineName
-    val isLowConfidence = medicineInfo.isLowConfidence
 
     val animatedContainerColor by animateColorAsState(
         targetValue = if (isAlarmRegistered) SuccessContainer else Color.White,
@@ -88,8 +80,6 @@ fun OcrMedicineCard(
     )
     val targetBorderColor = when {
         isAlarmRegistered -> Success.copy(alpha = 0.5f)
-        isHighlighted -> Secondary
-        isLowConfidence -> Warning.copy(alpha = 0.4f)
         else -> Secondary.copy(alpha = 0.15f)
     }
     val animatedBorderColor by animateColorAsState(
@@ -153,7 +143,7 @@ fun OcrMedicineCard(
             containerColor = animatedContainerColor,
             disabledContainerColor = animatedContainerColor
         ), border = BorderStroke(
-            width = if (isHighlighted) 2.5.dp else 1.2.dp,
+            width = 1.2.dp,
             color = animatedBorderColor
         )
     ) {
@@ -161,70 +151,18 @@ fun OcrMedicineCard(
             modifier = Modifier.padding(horizontal = 20.dp, vertical = 16.dp),
             verticalArrangement = Arrangement.spacedBy(space = 16.dp)
         ) {
-            AnimatedVisibility(
-                visible = isLowConfidence && !isAlarmRegistered && isCardExpanded,
-                enter = fadeIn(),
-                exit = fadeOut() + shrinkVertically()
-            ) {
-                Surface(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(bottom = 12.dp),
-                    shape = RoundedCornerShape(size = 12.dp),
-                    color = Warning.copy(alpha = 0.05f),
-                    border = BorderStroke(width = 1.dp, color = Warning.copy(alpha = 0.15f))
-                ) {
-                    Row(
-                        modifier = Modifier.padding(all = 12.dp),
-                        horizontalArrangement = Arrangement.spacedBy(space = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Warning,
-                            contentDescription = stringResource(R.string.common_cd_warning_icon),
-                            tint = Warning.copy(alpha = 0.7f),
-                            modifier = Modifier.size(size = 18.dp)
-                        )
-                        Text(
-                            text = stringResource(R.string.error_low_confidence),
-                            color = Warning.copy(alpha = 0.7f),
-                            fontWeight = FontWeight.SemiBold,
-                            style = MaterialTheme.typography.bodySmall
-                        )
-                    }
-                }
-            }
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Column(modifier = Modifier.weight(1f)) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(space = 6.dp)
-                    ) {
-                        Text(
-                            text = medicineName,
-                            color = if (isAlarmRegistered) Success else Primary,
-                            fontWeight = FontWeight.ExtraBold,
-                            style = MaterialTheme.typography.titleMedium
-                        )
-                        if (medicineInfo.autoCorrected) {
-                            Surface(
-                                shape = RoundedCornerShape(size = 6.dp),
-                                color = Secondary.copy(alpha = 0.12f)
-                            ) {
-                                Text(
-                                    text = stringResource(R.string.medicine_auto_corrected_badge),
-                                    color = Secondary,
-                                    fontWeight = FontWeight.Bold,
-                                    style = MaterialTheme.typography.labelSmall,
-                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                                )
-                            }
-                        }
-                    }
+                    Text(
+                        text = medicineName,
+                        color = if (isAlarmRegistered) Success else Primary,
+                        fontWeight = FontWeight.ExtraBold,
+                        style = MaterialTheme.typography.titleMedium
+                    )
                     if (!isCardExpanded) {
                         Spacer(modifier = Modifier.height(height = 4.dp))
                         Text(
@@ -366,14 +304,6 @@ fun OcrMedicineCard(
                             color = MaterialTheme.colorScheme.onSurface,
                             style = MaterialTheme.typography.bodyMedium
                         )
-                        if (medicineInfo.autoCorrected && !medicineInfo.rawName.isNullOrBlank()) {
-                            Spacer(modifier = Modifier.height(height = 6.dp))
-                            Text(
-                                text = stringResource(R.string.medicine_raw_name_format, medicineInfo.rawName),
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                style = MaterialTheme.typography.bodySmall
-                            )
-                        }
                     }
                 }
                 if (isAlarmRegistered && alarm != null && alarm.times.isNotEmpty()) {

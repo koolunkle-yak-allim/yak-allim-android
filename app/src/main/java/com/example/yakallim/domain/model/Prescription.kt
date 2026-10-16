@@ -1,7 +1,5 @@
 package com.example.yakallim.domain.model
 
 data class Prescription(
-    val rawText: String,
-    val medicines: List<PrescribedMedicine> = emptyList(),
-    val textBlocks: List<TextBlock> = emptyList()
+    val medicines: List<PrescribedMedicine> = emptyList()
 )

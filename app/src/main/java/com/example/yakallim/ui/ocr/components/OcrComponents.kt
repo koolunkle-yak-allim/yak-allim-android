@@ -67,6 +67,8 @@ fun OcrLoadingContent(
     message: String,
     isSseActive: Boolean,
     onCancelClick: () -> Unit,
+    // 서버가 세부 진행률을 알 수 없는 분석 단계(ANALYZING)에서는 진행률 숫자 대신 무한 진행 표시를 쓴다.
+    isIndeterminate: Boolean = false,
     modifier: Modifier = Modifier
 ) {
     val lottieComposition by rememberLottieComposition(spec = LottieCompositionSpec.RawRes(resId = R.raw.pill))
@@ -126,13 +128,22 @@ fun OcrLoadingContent(
         )
         Spacer(modifier = Modifier.height(height = 12.dp))
         Text(
-            text = if (displayedProgress > 0f) "${(displayedProgress * 100).toInt()}%" else stringResource(R.string.ocr_status_subtext),
+            text = if (displayedProgress > 0f && !isIndeterminate) "${(displayedProgress * 100).toInt()}%" else stringResource(R.string.ocr_status_subtext),
             modifier = Modifier.padding(horizontal = 40.dp),
             color = Primary.copy(alpha = 0.6f),
             textAlign = TextAlign.Center,
             style = MaterialTheme.typography.bodyMedium
         )
-        if (displayedProgress > 0f) {
+        if (isIndeterminate) {
+            Spacer(modifier = Modifier.height(height = 16.dp))
+            LinearProgressIndicator(
+                modifier = Modifier
+                    .width(180.dp)
+                    .clip(RoundedCornerShape(4.dp)),
+                color = HighlightCoral,
+                trackColor = Primary.copy(alpha = 0.1f)
+            )
+        } else if (displayedProgress > 0f) {
             Spacer(modifier = Modifier.height(height = 16.dp))
             LinearProgressIndicator(
                 progress = { displayedProgress },

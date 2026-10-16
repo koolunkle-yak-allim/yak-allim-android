@@ -36,15 +36,11 @@ internal fun OcrScreenContentPreview() {
             modifier = Modifier,
             uiState = OcrUiState(
                 isInitialized = true,
-                analysisResult = Prescription(
-                    rawText = "Preview Raw Text",
-                    medicines = duplicateMedicines
-                )
+                analysisResult = Prescription(medicines = duplicateMedicines)
             ),
             alarmUiState = AlarmUiState(isInitialized = true),
             snackbarHostState = remember { SnackbarHostState() },
             lazyListState = rememberLazyListState(),
-            highlightedMedicineName = null,
             isGuideSheetVisible = false,
             unknownMedicineLabel = "알 수 없는 약품",
             onGuideClick = {},
@@ -54,7 +50,6 @@ internal fun OcrScreenContentPreview() {
             onResetAnalysisClick = {},
             onStartAnalysisClick = {},
             onCancelAnalysisClick = {},
-            onMedicineTextClick = {},
             onRegisterAlarmClick = { _, _, _, _, _ -> },
             onCancelAlarmClick = {},
             onToggleCardExpansion = {},
