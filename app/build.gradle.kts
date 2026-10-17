@@ -25,11 +25,11 @@ secrets {
 }
 
 android {
-    namespace = "com.example.yakallim"
+    namespace = "io.github.koolunkle.yakallim"
     compileSdk = 37
 
     defaultConfig {
-        applicationId = "com.example.yakallim"
+        applicationId = "io.github.koolunkle.yakallim"
         minSdk = 24
         targetSdk = 37
         versionCode = 1
