@@ -1,7 +1,6 @@
 package io.github.koolunkle.yakallim.ui.ocr
 
 import android.content.Context
-import android.content.Intent
 import android.graphics.Bitmap
 import android.net.Uri
 import androidx.lifecycle.ViewModel
@@ -100,8 +99,8 @@ class OcrViewModel @Inject constructor(
         }
     }
 
-    fun handleIntent(intent: Intent?) {
-        val jobId = intent?.getStringExtra(OcrExtraSpec.KEY_JOB_ID)
+    /** 완료 알림을 눌러 화면이 열렸을 때 호출된다. 알림이 아닌 실행이면 jobId가 null이라 아무것도 하지 않는다. */
+    fun onNotificationOpened(jobId: String?) {
         if (!jobId.isNullOrBlank() && jobId != activeJobId) {
             activeJobId = jobId
             fetchAnalysisResult(jobId)

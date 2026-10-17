@@ -324,4 +324,42 @@ class OcrViewModelTest {
         assertNotNull(fakeRepository.requestedFile)
         assertEquals("job-1", fakeRepository.fetchedResultJobIds.last())
     }
+
+    @Test
+    fun onNotificationOpened_withJobId_fetchesThatJobsResult() = runTest {
+        val viewModel = createViewModel()
+        advanceUntilIdle()
+        fakeRepository.resultFlow = flowOf(Result.success(samplePrescription()))
+
+        viewModel.onNotificationOpened("job-from-push")
+        advanceUntilIdle()
+
+        assertEquals(listOf("job-from-push"), fakeRepository.fetchedResultJobIds)
+        assertEquals(1, viewModel.uiState.value.analysisResult?.medicines?.size)
+    }
+
+    @Test
+    fun onNotificationOpened_withoutJobId_doesNothing() = runTest {
+        val viewModel = createViewModel()
+        advanceUntilIdle()
+
+        viewModel.onNotificationOpened(null)
+        viewModel.onNotificationOpened("")
+        advanceUntilIdle()
+
+        assertTrue(fakeRepository.fetchedResultJobIds.isEmpty())
+    }
+
+    @Test
+    fun onNotificationOpened_withSameJobTwice_fetchesOnlyOnce() = runTest {
+        val viewModel = createViewModel()
+        advanceUntilIdle()
+
+        // 화면 회전 등으로 Activity가 다시 만들어지면 같은 Intent로 다시 호출된다.
+        viewModel.onNotificationOpened("job-from-push")
+        viewModel.onNotificationOpened("job-from-push")
+        advanceUntilIdle()
+
+        assertEquals(listOf("job-from-push"), fakeRepository.fetchedResultJobIds)
+    }
 }
