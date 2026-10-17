@@ -52,11 +52,12 @@ com.example.yakallim
 │   ├── notification # 푸시 알림 옵저버 인터페이스
 │   ├── repository  # 도메인 레포지토리 인터페이스
 │   └── usecase     # 기능적 비즈니스 로직 단위
-└── ui              # UI 컴포넌트 및 뷰모델
-    ├── alarm       # 알람 등록/취소/복구 화면 상태(AlarmViewModel)
-    ├── camera      # 카메라 및 이미지 선택 기능
-    ├── ocr         # OCR 진행 및 결과 UI
-    └── theme       # 디자인 시스템 및 테마 정의
+├── ui              # UI 컴포넌트 및 뷰모델
+│   ├── alarm       # 알람 등록/취소/복구 화면 상태(AlarmViewModel)
+│   ├── camera      # 카메라 및 이미지 선택 기능
+│   ├── ocr         # OCR 진행 및 결과 UI (components: 화면 구성 요소, 파일당 하나)
+│   └── theme       # 디자인 시스템 및 테마 정의
+└── util            # Context 확장 함수(ContextExt), 권한 확인(Permission)
 ```
 
 ## Getting Started
