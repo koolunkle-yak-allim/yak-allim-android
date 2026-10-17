@@ -38,45 +38,23 @@ pipeline {
                         def cleanOption = params.CLEAN_BUILD ? 'clean' : ''
                         def buildTask = params.BUILD_TYPE ?: 'assembleDebug'
 
-                        if (isUnix()) {
-                            // 1. 자격 증명 파일 workspace 복사 및 실행 권한 부여
-                            sh """
-                                rm -f secrets.properties app/google-services.json
-                                cp -f "\$SECRETS_PROPERTIES" secrets.properties
-                                cp -f "\$GOOGLE_SERVICES_JSON" app/google-services.json
-                                chmod +x gradlew
-                            """
+                        // 1. 자격 증명 파일 workspace 복사 및 실행 권한 부여
+                        sh """
+                            rm -f secrets.properties app/google-services.json
+                            cp -f "\$SECRETS_PROPERTIES" secrets.properties
+                            cp -f "\$GOOGLE_SERVICES_JSON" app/google-services.json
+                            chmod +x gradlew
+                        """
 
-                            // 2. Dynamic Docker Container Agent: --volumes-from으로 Jenkins 볼륨을 공유하여 빌드 진행 후 자동 파기
-                            sh """
-                                docker run --rm \
-                                    --volumes-from yak-allim-jenkins \
-                                    -v yak-allim-android-gradle-cache:/root/.gradle \
-                                    -w "${env.WORKSPACE}" \
-                                    thyrlian/android-sdk:10.0 \
-                                    sh -c "./gradlew ${cleanOption} ${buildTask}"
-                            """
-                        } else {
-                            withEnv([
-                                    "ANDROID_HOME=${env.ANDROID_HOME ?: 'C:\\Users\\a4336\\AppData\\Local\\Android\\Sdk'}",
-                                    "JAVA_HOME=${env.JAVA_HOME ?: 'C:\\Program Files\\Java\\jdk-17'}"
-                                ]) {
-                                bat """
-                                    if exist secrets.properties del /f /q secrets.properties
-                                    if exist app\\google-services.json del /f /q app\\google-services.json
-                                    copy /y "%SECRETS_PROPERTIES%" "secrets.properties"
-                                    copy /y "%GOOGLE_SERVICES_JSON%" "app\\google-services.json"
-
-                                    if not exist local.properties (
-                                        if defined ANDROID_HOME (
-                                            echo sdk.dir=%ANDROID_HOME% > local.properties
-                                        )
-                                    )
-
-                                    gradlew.bat ${cleanOption} ${buildTask}
-                                """
-                            }
-                        }
+                        // 2. Dynamic Docker Container Agent: --volumes-from으로 Jenkins 볼륨을 공유하여 빌드 진행 후 자동 파기
+                        sh """
+                            docker run --rm \
+                                --volumes-from yak-allim-jenkins \
+                                -v yak-allim-android-gradle-cache:/root/.gradle \
+                                -w "${env.WORKSPACE}" \
+                                thyrlian/android-sdk:10.0 \
+                                sh -c "./gradlew ${cleanOption} ${buildTask}"
+                        """
                     }
                 }
             }
