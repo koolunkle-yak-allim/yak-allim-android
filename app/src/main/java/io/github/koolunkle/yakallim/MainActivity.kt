@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.ui.Modifier
+import io.github.koolunkle.yakallim.ui.ocr.OcrExtraSpec
 import io.github.koolunkle.yakallim.ui.ocr.OcrScreen
 import io.github.koolunkle.yakallim.ui.ocr.OcrViewModel
 import io.github.koolunkle.yakallim.ui.theme.YakAllimTheme
@@ -23,7 +24,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        viewModel.handleIntent(intent)
+        viewModel.onNotificationOpened(OcrExtraSpec.readJobId(intent))
         setContent {
             YakAllimTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
@@ -39,6 +40,6 @@ class MainActivity : ComponentActivity() {
     override fun onNewIntent(intent: Intent) {
         setIntent(intent)
         super.onNewIntent(intent)
-        viewModel.handleIntent(intent)
+        viewModel.onNotificationOpened(OcrExtraSpec.readJobId(intent))
     }
 }
