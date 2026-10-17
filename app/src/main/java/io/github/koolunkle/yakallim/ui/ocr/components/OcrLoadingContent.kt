@@ -43,9 +43,9 @@ fun OcrLoadingContent(
     message: String,
     isSseActive: Boolean,
     onCancelClick: () -> Unit,
+    modifier: Modifier = Modifier,
     // 서버가 세부 진행률을 알 수 없는 분석 단계(ANALYZING)에서는 진행률 숫자 대신 무한 진행 표시를 쓴다.
-    isIndeterminate: Boolean = false,
-    modifier: Modifier = Modifier
+    isIndeterminate: Boolean = false
 ) {
     val lottieComposition by rememberLottieComposition(spec = LottieCompositionSpec.RawRes(resId = R.raw.pill))
     val lottieProgress by animateLottieCompositionAsState(
