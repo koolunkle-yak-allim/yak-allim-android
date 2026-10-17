@@ -15,6 +15,7 @@ import com.example.yakallim.domain.notification.PushNotificationObserver
 import com.example.yakallim.domain.notification.PushTokenProvider
 import com.example.yakallim.domain.notification.PushMessage
 import com.example.yakallim.domain.model.JobStatus
+import com.example.yakallim.ui.ocr.OcrExtraSpec
 import com.example.yakallim.util.notificationManager
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
@@ -113,7 +114,8 @@ class FcmMessagingService : FirebaseMessagingService() {
         val intent = Intent(this, MainActivity::class.java)
         intent.setPackage(packageName)
         intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
-        intent.putExtra(FcmPayloadSpec.KEY_JOB_ID, jobId)
+        // 서버가 보내는 FCM 페이로드 키(FcmPayloadSpec)와 달리, 이 Intent를 읽는 화면의 키를 쓴다.
+        intent.putExtra(OcrExtraSpec.KEY_JOB_ID, jobId)
         val pendingIntent = PendingIntent.getActivity(
             this,
             jobId?.hashCode() ?: 0,
