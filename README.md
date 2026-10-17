@@ -38,7 +38,7 @@
 ### Package Structure
 
 ```text
-com.example.yakallim
+io.github.koolunkle.yakallim
 ├── data            # 데이터 및 인프라 구현체
 │   ├── datasource  # 로컬(DataStore) 및 원격(API) 데이터 소스
 │   ├── infrastructure # 알람, FCM, 이미지 처리 구현체

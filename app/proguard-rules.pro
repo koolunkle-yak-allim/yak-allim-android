@@ -39,4 +39,4 @@
 # Firebase also provides its own ProGuard rules in the AAR.
 
 # Project specific: Keep DTOs that use Moshi
--keep @com.squareup.moshi.JsonClass class com.example.yakallim.data.datasource.remote.dto.** { *; }
+-keep @com.squareup.moshi.JsonClass class io.github.koolunkle.yakallim.data.datasource.remote.dto.** { *; }
