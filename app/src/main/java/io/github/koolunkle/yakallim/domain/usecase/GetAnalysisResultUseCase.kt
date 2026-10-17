@@ -1,14 +1,14 @@
 package io.github.koolunkle.yakallim.domain.usecase
 
-import io.github.koolunkle.yakallim.domain.model.Progress
+import io.github.koolunkle.yakallim.domain.model.Prescription
 import io.github.koolunkle.yakallim.domain.repository.OcrRepository
 import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
 
-class ObserveProgressUseCase @Inject constructor(
+class GetAnalysisResultUseCase @Inject constructor(
     private val ocrRepository: OcrRepository
 ) {
-    operator fun invoke(jobId: String): Flow<Progress> {
-        return ocrRepository.observeOcrProgress(jobId)
+    operator fun invoke(jobId: String): Flow<Result<Prescription>> {
+        return ocrRepository.fetchAnalysisResult(jobId)
     }
 }

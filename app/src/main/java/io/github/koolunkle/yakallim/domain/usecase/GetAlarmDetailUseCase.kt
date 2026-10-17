@@ -4,10 +4,10 @@ import io.github.koolunkle.yakallim.domain.alarm.AlarmScheduler
 import io.github.koolunkle.yakallim.domain.model.Alarm
 import javax.inject.Inject
 
-class GetDetailAlarmUseCase @Inject constructor(
+class GetAlarmDetailUseCase @Inject constructor(
     private val alarmScheduler: AlarmScheduler
 ) {
     suspend operator fun invoke(medicineName: String): Alarm? {
-        return alarmScheduler.getDetailAlarm(medicineName)
+        return alarmScheduler.getAlarmDetail(medicineName)
     }
 }

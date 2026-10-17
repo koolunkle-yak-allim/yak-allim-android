@@ -7,15 +7,15 @@ import io.github.koolunkle.yakallim.domain.model.Prescription
 import io.github.koolunkle.yakallim.domain.model.PrescribedMedicine
 import io.github.koolunkle.yakallim.domain.model.Progress
 import io.github.koolunkle.yakallim.domain.notification.PushMessage
-import io.github.koolunkle.yakallim.domain.usecase.CancelPrescriptionUseCase
-import io.github.koolunkle.yakallim.domain.usecase.ClearLastPrescriptionUseCase
+import io.github.koolunkle.yakallim.domain.usecase.CancelAnalysisUseCase
+import io.github.koolunkle.yakallim.domain.usecase.ClearLastAnalysisResultUseCase
 import io.github.koolunkle.yakallim.domain.usecase.GetCachedImageUriUseCase
-import io.github.koolunkle.yakallim.domain.usecase.GetLastPrescriptionUseCase
-import io.github.koolunkle.yakallim.domain.usecase.GetPendingPrescriptionUseCase
-import io.github.koolunkle.yakallim.domain.usecase.GetPrescriptionResultUseCase
-import io.github.koolunkle.yakallim.domain.usecase.ObserveProgressUseCase
+import io.github.koolunkle.yakallim.domain.usecase.GetLastAnalysisResultUseCase
+import io.github.koolunkle.yakallim.domain.usecase.GetPendingAnalysisJobIdUseCase
+import io.github.koolunkle.yakallim.domain.usecase.GetAnalysisResultUseCase
+import io.github.koolunkle.yakallim.domain.usecase.ObserveAnalysisProgressUseCase
 import io.github.koolunkle.yakallim.domain.usecase.PrepareImageUseCase
-import io.github.koolunkle.yakallim.domain.usecase.RequestPrescriptionUseCase
+import io.github.koolunkle.yakallim.domain.usecase.StartAnalysisUseCase
 import io.github.koolunkle.yakallim.testutil.FakeImageProcessor
 import io.github.koolunkle.yakallim.testutil.FakeOcrRepository
 import io.github.koolunkle.yakallim.testutil.FakePushNotificationObserver
@@ -67,13 +67,13 @@ class OcrViewModelTest {
             on { getString(any()) } doReturn "stubbed message"
         }
         return OcrViewModel(
-            requestPrescriptionUseCase = RequestPrescriptionUseCase(fakeRepository),
-            getPrescriptionResultUseCase = GetPrescriptionResultUseCase(fakeRepository),
-            getPendingPrescriptionUseCase = GetPendingPrescriptionUseCase(fakeRepository),
-            getLastPrescriptionUseCase = GetLastPrescriptionUseCase(fakeRepository),
-            clearLastPrescriptionUseCase = ClearLastPrescriptionUseCase(fakeRepository),
-            cancelPrescriptionUseCase = CancelPrescriptionUseCase(fakeRepository),
-            observeProgressUseCase = ObserveProgressUseCase(fakeRepository),
+            startAnalysisUseCase = StartAnalysisUseCase(fakeRepository),
+            getAnalysisResultUseCase = GetAnalysisResultUseCase(fakeRepository),
+            getPendingAnalysisJobIdUseCase = GetPendingAnalysisJobIdUseCase(fakeRepository),
+            getLastAnalysisResultUseCase = GetLastAnalysisResultUseCase(fakeRepository),
+            clearLastAnalysisResultUseCase = ClearLastAnalysisResultUseCase(fakeRepository),
+            cancelAnalysisUseCase = CancelAnalysisUseCase(fakeRepository),
+            observeAnalysisProgressUseCase = ObserveAnalysisProgressUseCase(fakeRepository),
             prepareImageUseCase = PrepareImageUseCase(fakeImageProcessor),
             getCachedImageUriUseCase = GetCachedImageUriUseCase(fakeRepository),
             pushNotificationObserver = fakePushObserver.observer,
@@ -237,7 +237,7 @@ class OcrViewModelTest {
 
         // onImageSelected() also stops any prior analysis, so capture the baseline here
         // rather than assuming this is the first cancellation of the test.
-        val cancelCallsBeforeCancellation = fakeRepository.cancelPrescriptionCallCount
+        val cancelCallsBeforeCancellation = fakeRepository.cancelAnalysisCallCount
 
         viewModel.onAnalysisCancelRequested()
         advanceUntilIdle()
@@ -246,7 +246,7 @@ class OcrViewModelTest {
         assertFalse(state.isLoading)
         assertTrue(state.error is OcrError.Unknown)
         assertNull(state.progress)
-        assertEquals(cancelCallsBeforeCancellation + 1, fakeRepository.cancelPrescriptionCallCount)
+        assertEquals(cancelCallsBeforeCancellation + 1, fakeRepository.cancelAnalysisCallCount)
         // The cancelled coroutine must not resume and overwrite the cancelled state.
         assertNull(state.analysisResult)
     }

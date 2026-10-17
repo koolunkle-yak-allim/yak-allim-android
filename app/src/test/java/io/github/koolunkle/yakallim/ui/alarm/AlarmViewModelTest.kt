@@ -5,7 +5,7 @@ import app.cash.turbine.test
 import io.github.koolunkle.yakallim.domain.model.Alarm
 import io.github.koolunkle.yakallim.domain.usecase.CancelAlarmUseCase
 import io.github.koolunkle.yakallim.domain.usecase.GetActiveAlarmsUseCase
-import io.github.koolunkle.yakallim.domain.usecase.GetDetailAlarmUseCase
+import io.github.koolunkle.yakallim.domain.usecase.GetAlarmDetailUseCase
 import io.github.koolunkle.yakallim.domain.usecase.ScheduleAlarmUseCase
 import io.github.koolunkle.yakallim.testutil.FakeAlarmScheduler
 import io.github.koolunkle.yakallim.testutil.MainDispatcherRule
@@ -41,7 +41,7 @@ class AlarmViewModelTest {
         }
         return AlarmViewModel(
             getActiveAlarmsUseCase = GetActiveAlarmsUseCase(fakeAlarmScheduler),
-            getDetailAlarmUseCase = GetDetailAlarmUseCase(fakeAlarmScheduler),
+            getAlarmDetailUseCase = GetAlarmDetailUseCase(fakeAlarmScheduler),
             scheduleAlarmUseCase = ScheduleAlarmUseCase(fakeAlarmScheduler),
             cancelAlarmUseCase = CancelAlarmUseCase(fakeAlarmScheduler),
             context = context

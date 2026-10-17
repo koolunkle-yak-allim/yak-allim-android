@@ -1,13 +1,10 @@
 package io.github.koolunkle.yakallim.domain.usecase
 
 import io.github.koolunkle.yakallim.domain.repository.OcrRepository
-import java.io.File
 import javax.inject.Inject
 
-class RequestPrescriptionUseCase @Inject constructor(
+class ClearLastAnalysisResultUseCase @Inject constructor(
     private val ocrRepository: OcrRepository
 ) {
-    suspend operator fun invoke(imageFile: File): String {
-        return ocrRepository.requestPrescription(imageFile)
-    }
+    suspend operator fun invoke() = ocrRepository.clearLastAnalysisResult()
 }
