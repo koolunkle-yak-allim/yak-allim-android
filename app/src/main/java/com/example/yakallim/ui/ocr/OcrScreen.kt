@@ -349,6 +349,12 @@ internal fun OcrScreenContent(
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 style = MaterialTheme.typography.bodySmall
                             )
+                            // 서버는 생략 여부를 알 수 없어, 결과가 있을 때 항상 안내한다.
+                            Text(
+                                text = stringResource(R.string.ocr_result_omitted_hint),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                style = MaterialTheme.typography.bodySmall
+                            )
                             OcrExpansionControls(isAllExpanded, onToggleAllCardsExpansion)
                         }
                     }
