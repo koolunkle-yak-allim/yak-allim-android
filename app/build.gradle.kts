@@ -1,3 +1,6 @@
+import java.net.URI
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
@@ -56,6 +59,71 @@ android {
     }
     lint {
         disable.add("MissingFirebaseInstanceTokenRefresh")
+    }
+}
+
+// 디버그 빌드는 로컬 개발 서버에 평문 HTTP로 접속한다. 허용할 호스트를 저장소에 적어 두지 않고,
+// secrets.properties의 BASE_URL(http일 때)에서 읽어 network_security_config를 빌드 때 만든다.
+abstract class GenerateDebugNetworkSecurityConfig : DefaultTask() {
+    @get:Input
+    abstract val cleartextHosts: ListProperty<String>
+
+    @get:OutputDirectory
+    abstract val outputDir: DirectoryProperty
+
+    @TaskAction
+    fun generate() {
+        val domains = cleartextHosts.get().joinToString("\n") { host ->
+            "        <domain includeSubdomains=\"true\">$host</domain>"
+        }
+        val file = outputDir.file("xml/network_security_config.xml").get().asFile
+        file.parentFile.mkdirs()
+        file.writeText(
+            """
+            |<?xml version="1.0" encoding="utf-8"?>
+            |<!-- 빌드 때 생성되는 파일입니다. 직접 수정하지 말고 secrets.properties의 BASE_URL을 바꾸세요. -->
+            |<network-security-config>
+            |    <base-config cleartextTrafficPermitted="false">
+            |        <trust-anchors>
+            |            <certificates src="system" />
+            |        </trust-anchors>
+            |    </base-config>
+            |
+            |    <domain-config cleartextTrafficPermitted="true">
+            |$domains
+            |    </domain-config>
+            |
+            |    <debug-overrides>
+            |        <trust-anchors>
+            |            <certificates src="system" />
+            |            <certificates src="user" />
+            |        </trust-anchors>
+            |    </debug-overrides>
+            |</network-security-config>
+            |""".trimMargin()
+        )
+    }
+}
+
+// 에뮬레이터의 호스트 PC 별칭(10.0.2.2)과 localhost는 항상 허용하고, BASE_URL이 http면 그 호스트를 더한다.
+val debugCleartextHosts: List<String> = run {
+    val properties = Properties()
+    val secretsFile = rootProject.file("secrets.properties").takeIf { it.exists() }
+        ?: rootProject.file("secrets.defaults.properties")
+    if (secretsFile.exists()) secretsFile.inputStream().use(properties::load)
+    val baseUrl = runCatching { URI(properties.getProperty("BASE_URL").orEmpty()) }.getOrNull()
+    val baseUrlHost = baseUrl?.takeIf { it.scheme == "http" }?.host
+    (listOf("10.0.2.2", "localhost") + listOfNotNull(baseUrlHost)).distinct()
+}
+
+androidComponents {
+    onVariants(selector().withBuildType("debug")) { variant ->
+        val task = tasks.register<GenerateDebugNetworkSecurityConfig>(
+            "generate${variant.name.replaceFirstChar { it.uppercase() }}NetworkSecurityConfig"
+        ) {
+            cleartextHosts.set(debugCleartextHosts)
+        }
+        variant.sources.res?.addGeneratedSourceDirectory(task, GenerateDebugNetworkSecurityConfig::outputDir)
     }
 }
 
