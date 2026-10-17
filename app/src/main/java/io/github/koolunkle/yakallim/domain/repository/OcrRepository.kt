@@ -7,13 +7,13 @@ import kotlinx.coroutines.flow.Flow
 import java.io.File
 
 interface OcrRepository {
-    suspend fun requestPrescription(imageFile: File): String
-    fun fetchPrescriptionResult(jobId: String): Flow<Result<Prescription>>
-    suspend fun cancelPrescription()
-    suspend fun getPendingPrescriptionJobId(): String?
-    suspend fun getLastPrescription(): Prescription?
-    suspend fun clearLastPrescription()
-    fun observeOcrProgress(jobId: String): Flow<Progress>
+    suspend fun startAnalysis(imageFile: File): String
+    fun fetchAnalysisResult(jobId: String): Flow<Result<Prescription>>
+    suspend fun cancelAnalysis()
+    suspend fun getPendingAnalysisJobId(): String?
+    suspend fun getLastAnalysisResult(): Prescription?
+    suspend fun clearLastAnalysisResult()
+    fun observeAnalysisProgress(jobId: String): Flow<Progress>
     fun getCachedImageUri(jobId: String): Uri?
     fun getLastCachedImageUri(): Uri?
 }

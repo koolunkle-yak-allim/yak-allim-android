@@ -32,7 +32,7 @@ class OcrRepositoryImpl @Inject constructor(
     @param:ApplicationContext private val context: Context
 ) : OcrRepository {
 
-    override suspend fun requestPrescription(imageFile: File): String =
+    override suspend fun startAnalysis(imageFile: File): String =
         withContext(Dispatchers.IO) {
             val processedFile = imageProcessor.preprocess(imageFile)
             val fcmToken = pushTokenProvider.getFcmToken()
@@ -43,7 +43,7 @@ class OcrRepositoryImpl @Inject constructor(
             jobId
         }
 
-    override fun fetchPrescriptionResult(jobId: String): Flow<Result<Prescription>> = flow {
+    override fun fetchAnalysisResult(jobId: String): Flow<Result<Prescription>> = flow {
         try {
             val ocrJob = ocrRemoteDataSource.getOcrJob(jobId)
             val ocrJobResult = ocrJob.result
@@ -69,7 +69,7 @@ class OcrRepositoryImpl @Inject constructor(
         }
     }.flowOn(Dispatchers.IO)
 
-    override suspend fun cancelPrescription() {
+    override suspend fun cancelAnalysis() {
         ocrLocalDataSource.getPendingJobId()?.let { jobId ->
             ocrLocalDataSource.setAnalysisCancelled(jobId)
             try {
@@ -82,7 +82,7 @@ class OcrRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun getPendingPrescriptionJobId(): String? {
+    override suspend fun getPendingAnalysisJobId(): String? {
         return ocrLocalDataSource.getPendingJobId()
     }
 
@@ -95,7 +95,7 @@ class OcrRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun getLastPrescription(): Prescription? {
+    override suspend fun getLastAnalysisResult(): Prescription? {
         val jsonString = ocrLocalDataSource.getLastPrescriptionJson() ?: return null
         return try {
             val ocrJobResult = json.decodeFromString<OcrResponse>(jsonString)
@@ -106,7 +106,7 @@ class OcrRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun clearLastPrescription() {
+    override suspend fun clearLastAnalysisResult() {
         ocrLocalDataSource.clearLastPrescriptionJson()
         try {
             val lastCache = File(context.cacheDir, "ocr_image_last.jpg")
@@ -118,7 +118,7 @@ class OcrRepositoryImpl @Inject constructor(
         }
     }
 
-    override fun observeOcrProgress(jobId: String): Flow<Progress> {
+    override fun observeAnalysisProgress(jobId: String): Flow<Progress> {
         return ocrRemoteDataSource.observeOcrProgress(jobId)
     }
 

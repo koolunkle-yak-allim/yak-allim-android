@@ -7,7 +7,7 @@ import io.github.koolunkle.yakallim.R
 import io.github.koolunkle.yakallim.domain.model.Alarm
 import io.github.koolunkle.yakallim.domain.usecase.CancelAlarmUseCase
 import io.github.koolunkle.yakallim.domain.usecase.GetActiveAlarmsUseCase
-import io.github.koolunkle.yakallim.domain.usecase.GetDetailAlarmUseCase
+import io.github.koolunkle.yakallim.domain.usecase.GetAlarmDetailUseCase
 import io.github.koolunkle.yakallim.domain.usecase.ScheduleAlarmUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -24,7 +24,7 @@ import javax.inject.Inject
 @HiltViewModel
 class AlarmViewModel @Inject constructor(
     private val getActiveAlarmsUseCase: GetActiveAlarmsUseCase,
-    private val getDetailAlarmUseCase: GetDetailAlarmUseCase,
+    private val getAlarmDetailUseCase: GetAlarmDetailUseCase,
     private val scheduleAlarmUseCase: ScheduleAlarmUseCase,
     private val cancelAlarmUseCase: CancelAlarmUseCase,
     @param:ApplicationContext private val context: Context
@@ -46,7 +46,7 @@ class AlarmViewModel @Inject constructor(
     private suspend fun recoverActiveAlarms() {
         val activeAlarms = getActiveAlarmsUseCase()
         val restoredDetails = activeAlarms.associateWith { medicineName ->
-            getDetailAlarmUseCase(medicineName) ?: Alarm(times = emptyList(), soundUri = null)
+            getAlarmDetailUseCase(medicineName) ?: Alarm(times = emptyList(), soundUri = null)
         }
         _uiState.update { state ->
             state.copy(registeredAlarms = state.registeredAlarms + restoredDetails)

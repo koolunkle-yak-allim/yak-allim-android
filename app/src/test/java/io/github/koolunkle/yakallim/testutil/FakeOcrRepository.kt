@@ -13,7 +13,7 @@ import kotlinx.coroutines.flow.emptyFlow
 
 class FakeOcrRepository : OcrRepository {
     var requestedFile: File? = null
-    var requestPrescriptionResult: Result<String> = Result.success("job-1")
+    var startAnalysisResult: Result<String> = Result.success("job-1")
     var progressFlow: Flow<Progress> = emptyFlow()
     var resultFlow: Flow<Result<Prescription>> = emptyFlow()
     var pendingPrescriptionJobId: String? = null
@@ -23,32 +23,32 @@ class FakeOcrRepository : OcrRepository {
 
     val fetchedResultJobIds = mutableListOf<String>()
     val observedProgressJobIds = mutableListOf<String>()
-    var cancelPrescriptionCallCount = 0
-    var clearLastPrescriptionCallCount = 0
+    var cancelAnalysisCallCount = 0
+    var clearLastAnalysisResultCallCount = 0
 
-    override suspend fun requestPrescription(imageFile: File): String {
+    override suspend fun startAnalysis(imageFile: File): String {
         requestedFile = imageFile
-        return requestPrescriptionResult.getOrThrow()
+        return startAnalysisResult.getOrThrow()
     }
 
-    override fun fetchPrescriptionResult(jobId: String): Flow<Result<Prescription>> {
+    override fun fetchAnalysisResult(jobId: String): Flow<Result<Prescription>> {
         fetchedResultJobIds += jobId
         return resultFlow
     }
 
-    override suspend fun cancelPrescription() {
-        cancelPrescriptionCallCount++
+    override suspend fun cancelAnalysis() {
+        cancelAnalysisCallCount++
     }
 
-    override suspend fun getPendingPrescriptionJobId(): String? = pendingPrescriptionJobId
+    override suspend fun getPendingAnalysisJobId(): String? = pendingPrescriptionJobId
 
-    override suspend fun getLastPrescription(): Prescription? = lastPrescription
+    override suspend fun getLastAnalysisResult(): Prescription? = lastPrescription
 
-    override suspend fun clearLastPrescription() {
-        clearLastPrescriptionCallCount++
+    override suspend fun clearLastAnalysisResult() {
+        clearLastAnalysisResultCallCount++
     }
 
-    override fun observeOcrProgress(jobId: String): Flow<Progress> {
+    override fun observeAnalysisProgress(jobId: String): Flow<Progress> {
         observedProgressJobIds += jobId
         return progressFlow
     }

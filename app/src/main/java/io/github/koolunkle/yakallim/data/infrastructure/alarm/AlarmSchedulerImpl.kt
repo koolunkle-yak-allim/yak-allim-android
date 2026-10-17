@@ -81,7 +81,7 @@ class AlarmSchedulerImpl @Inject constructor(
         return alarmPreference.getActiveAlarmMedicines()
     }
 
-    override suspend fun getDetailAlarm(medicineName: String): Alarm? {
+    override suspend fun getAlarmDetail(medicineName: String): Alarm? {
         val spec = loadSpec(medicineName) ?: return null
         return Alarm(spec.alarmTimes, spec.soundUri)
     }

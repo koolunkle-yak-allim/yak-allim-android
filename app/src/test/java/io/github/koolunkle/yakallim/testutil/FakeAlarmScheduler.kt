@@ -29,7 +29,7 @@ class FakeAlarmScheduler : AlarmScheduler {
 
     override suspend fun getActiveAlarm(): Set<String> = activeAlarms
 
-    override suspend fun getDetailAlarm(medicineName: String): Alarm? = detailAlarms[medicineName]
+    override suspend fun getAlarmDetail(medicineName: String): Alarm? = detailAlarms[medicineName]
 
     override suspend fun rescheduleAll() {
         // no-op for ViewModel-level tests

@@ -7,15 +7,15 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import io.github.koolunkle.yakallim.R
 import io.github.koolunkle.yakallim.domain.notification.PushNotificationObserver
-import io.github.koolunkle.yakallim.domain.usecase.RequestPrescriptionUseCase
-import io.github.koolunkle.yakallim.domain.usecase.CancelPrescriptionUseCase
-import io.github.koolunkle.yakallim.domain.usecase.ClearLastPrescriptionUseCase
+import io.github.koolunkle.yakallim.domain.usecase.StartAnalysisUseCase
+import io.github.koolunkle.yakallim.domain.usecase.CancelAnalysisUseCase
+import io.github.koolunkle.yakallim.domain.usecase.ClearLastAnalysisResultUseCase
 import io.github.koolunkle.yakallim.domain.usecase.GetCachedImageUriUseCase
-import io.github.koolunkle.yakallim.domain.usecase.GetPrescriptionResultUseCase
-import io.github.koolunkle.yakallim.domain.usecase.GetLastPrescriptionUseCase
-import io.github.koolunkle.yakallim.domain.usecase.GetPendingPrescriptionUseCase
+import io.github.koolunkle.yakallim.domain.usecase.GetAnalysisResultUseCase
+import io.github.koolunkle.yakallim.domain.usecase.GetLastAnalysisResultUseCase
+import io.github.koolunkle.yakallim.domain.usecase.GetPendingAnalysisJobIdUseCase
 import io.github.koolunkle.yakallim.domain.usecase.PrepareImageUseCase
-import io.github.koolunkle.yakallim.domain.usecase.ObserveProgressUseCase
+import io.github.koolunkle.yakallim.domain.usecase.ObserveAnalysisProgressUseCase
 import io.github.koolunkle.yakallim.domain.model.JobStatus
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -38,13 +38,13 @@ import javax.inject.Inject
 
 @HiltViewModel
 class OcrViewModel @Inject constructor(
-    private val requestPrescriptionUseCase: RequestPrescriptionUseCase,
-    private val getPrescriptionResultUseCase: GetPrescriptionResultUseCase,
-    private val getPendingPrescriptionUseCase: GetPendingPrescriptionUseCase,
-    private val getLastPrescriptionUseCase: GetLastPrescriptionUseCase,
-    private val clearLastPrescriptionUseCase: ClearLastPrescriptionUseCase,
-    private val cancelPrescriptionUseCase: CancelPrescriptionUseCase,
-    private val observeProgressUseCase: ObserveProgressUseCase,
+    private val startAnalysisUseCase: StartAnalysisUseCase,
+    private val getAnalysisResultUseCase: GetAnalysisResultUseCase,
+    private val getPendingAnalysisJobIdUseCase: GetPendingAnalysisJobIdUseCase,
+    private val getLastAnalysisResultUseCase: GetLastAnalysisResultUseCase,
+    private val clearLastAnalysisResultUseCase: ClearLastAnalysisResultUseCase,
+    private val cancelAnalysisUseCase: CancelAnalysisUseCase,
+    private val observeAnalysisProgressUseCase: ObserveAnalysisProgressUseCase,
     private val prepareImageUseCase: PrepareImageUseCase,
     private val getCachedImageUriUseCase: GetCachedImageUriUseCase,
     private val pushNotificationObserver: PushNotificationObserver,
@@ -73,17 +73,17 @@ class OcrViewModel @Inject constructor(
         if (_uiState.value.hasImage && !_uiState.value.isLoading) {
             return
         }
-        val jobId = getPendingPrescriptionUseCase()
+        val jobId = getPendingAnalysisJobIdUseCase()
         if (!jobId.isNullOrBlank() && jobId != activeJobId) {
             activeJobId = jobId
             fetchAnalysisResult(jobId)
         } else if (jobId.isNullOrBlank()) {
-            recoverLastPrescription()
+            recoverLastAnalysisResult()
         }
     }
 
-    private suspend fun recoverLastPrescription() {
-        val lastPrescription = getLastPrescriptionUseCase()
+    private suspend fun recoverLastAnalysisResult() {
+        val lastPrescription = getLastAnalysisResultUseCase()
         if (lastPrescription != null) {
             val restoredUri = getCachedImageUriUseCase.last()
             _uiState.update { state ->
@@ -126,7 +126,7 @@ class OcrViewModel @Inject constructor(
         stopActiveAnalysis()
         activeJobId = null
         viewModelScope.launch {
-            clearLastPrescriptionUseCase()
+            clearLastAnalysisResultUseCase()
         }
         _uiState.update {
             it.copy(
@@ -186,7 +186,7 @@ class OcrViewModel @Inject constructor(
             }
 
             val jobId = try {
-                requestPrescriptionUseCase(file)
+                startAnalysisUseCase(file)
             } catch (e: Exception) {
                 if (e is CancellationException) throw e
                 _uiState.update {
@@ -207,7 +207,7 @@ class OcrViewModel @Inject constructor(
             }
 
             val finalProgress = try {
-                observeProgressUseCase(jobId)
+                observeAnalysisProgressUseCase(jobId)
                     .onEach { progress ->
                         _uiState.update { state ->
                             val currentProgress = state.progress
@@ -307,7 +307,7 @@ class OcrViewModel @Inject constructor(
 
             val restoredUri = getCachedImageUriUseCase(jobId)
 
-            getPrescriptionResultUseCase(jobId).collect { result ->
+            getAnalysisResultUseCase(jobId).collect { result ->
                 result.onSuccess { analysisResult ->
                     val isValid = analysisResult.medicines.isNotEmpty()
 
@@ -403,7 +403,7 @@ class OcrViewModel @Inject constructor(
     private fun stopActiveAnalysis() {
         job?.cancel()
         viewModelScope.launch {
-            cancelPrescriptionUseCase()
+            cancelAnalysisUseCase()
         }
     }
 
