@@ -81,5 +81,5 @@ com.example.yakallim
 4. `secrets.properties`의 `BASE_URL`을 백엔드(`yak-allim-server` + `yak-allim-infra`) 주소로 지정합니다.
    - 같은 PC에서 Android 에뮬레이터로 테스트: `BASE_URL=http://10.0.2.2/` (에뮬레이터가 호스트 PC의 localhost를 가리키는 특수 별칭)
    - 같은 Wi-Fi의 실제 기기로 테스트: `BASE_URL=http://<백엔드가 떠 있는 PC의 LAN IP>/`
-   - 디버그 빌드는 `app/src/debug/res/xml/network_security_config.xml`에 등록된 도메인(`10.0.2.2`, `localhost`, 특정 LAN IP)에 한해서만 평문 HTTP를 허용합니다. 실제 기기의 IP가 다르면 이 파일에 도메인을 추가해야 합니다. (릴리스 빌드는 평문 HTTP를 허용하지 않습니다.)
+   - 디버그 빌드는 `10.0.2.2`, `localhost`, 그리고 `BASE_URL`이 `http://`일 때 그 호스트에 한해서만 평문 HTTP를 허용합니다. 허용 목록은 빌드 때 `BASE_URL`에서 읽어 `network_security_config.xml`을 만들기 때문에, PC의 IP가 바뀌어도 `BASE_URL`만 고치면 됩니다. (릴리스 빌드는 평문 HTTP를 허용하지 않습니다.)
 5. Android Studio에서 프로젝트를 빌드하고 실행합니다.
