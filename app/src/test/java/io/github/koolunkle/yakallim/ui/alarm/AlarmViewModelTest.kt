@@ -1,7 +1,6 @@
 package io.github.koolunkle.yakallim.ui.alarm
 
 import android.content.Context
-import app.cash.turbine.test
 import io.github.koolunkle.yakallim.domain.model.Alarm
 import io.github.koolunkle.yakallim.domain.usecase.CancelAlarmUseCase
 import io.github.koolunkle.yakallim.domain.usecase.GetActiveAlarmsUseCase
@@ -10,6 +9,10 @@ import io.github.koolunkle.yakallim.domain.usecase.ScheduleAlarmUseCase
 import io.github.koolunkle.yakallim.testutil.FakeAlarmScheduler
 import io.github.koolunkle.yakallim.testutil.MainDispatcherRule
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.TestScope
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -48,6 +51,13 @@ class AlarmViewModelTest {
         )
     }
 
+    // 이벤트를 가상 시간 안에서 모은다. 실제 시간 제한이 없어 PC 부하와 관계없이 결과가 같다.
+    private fun TestScope.collectEvents(viewModel: AlarmViewModel): List<AlarmEvent> {
+        val events = mutableListOf<AlarmEvent>()
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { viewModel.events.toList(events) }
+        return events
+    }
+
     @Test
     fun init_recoversPreviouslyActiveAlarmsFromScheduler() = runTest {
         fakeAlarmScheduler.activeAlarms = setOf("타이레놀정")
@@ -65,26 +75,26 @@ class AlarmViewModelTest {
     fun registerMedicineAlarm_whenSchedulingSucceeds_addsToRegisteredAlarmsAndEmitsRegisteredEvent() = runTest {
         val viewModel = createViewModel()
         advanceUntilIdle()
+        val events = collectEvents(viewModel)
 
-        viewModel.events.test {
-            viewModel.registerMedicineAlarm(
-                medicineId = "medicine-1",
-                medicineName = "타이레놀정",
-                dosagePerTake = "1정",
-                dailyFrequency = 3,
-                durationDays = 5,
-                alarmTimes = listOf("09:00"),
-                soundUri = null
-            )
+        viewModel.registerMedicineAlarm(
+            medicineId = "medicine-1",
+            medicineName = "타이레놀정",
+            dosagePerTake = "1정",
+            dailyFrequency = 3,
+            durationDays = 5,
+            alarmTimes = listOf("09:00"),
+            soundUri = null
+        )
+        advanceUntilIdle()
 
-            val event = awaitItem()
-            assertTrue(event is AlarmEvent.Registered)
-            val registered = event as AlarmEvent.Registered
-            assertEquals("medicine-1", registered.medicineId)
-            assertEquals("1정", registered.dosagePerTake)
-            assertEquals(3, registered.dailyFrequency)
-            assertEquals(5, registered.durationDays)
-        }
+        val event = events.single()
+        assertTrue(event is AlarmEvent.Registered)
+        val registered = event as AlarmEvent.Registered
+        assertEquals("medicine-1", registered.medicineId)
+        assertEquals("1정", registered.dosagePerTake)
+        assertEquals(3, registered.dailyFrequency)
+        assertEquals(5, registered.durationDays)
 
         val state = viewModel.uiState.value
         assertTrue(state.registeredAlarms.containsKey("타이레놀정"))
@@ -96,21 +106,20 @@ class AlarmViewModelTest {
         fakeAlarmScheduler.scheduleShouldThrow = true
         val viewModel = createViewModel()
         advanceUntilIdle()
+        val events = collectEvents(viewModel)
 
-        viewModel.events.test {
-            viewModel.registerMedicineAlarm(
-                medicineId = "medicine-1",
-                medicineName = "타이레놀정",
-                dosagePerTake = "1정",
-                dailyFrequency = 3,
-                durationDays = 5,
-                alarmTimes = listOf("09:00"),
-                soundUri = null
-            )
+        viewModel.registerMedicineAlarm(
+            medicineId = "medicine-1",
+            medicineName = "타이레놀정",
+            dosagePerTake = "1정",
+            dailyFrequency = 3,
+            durationDays = 5,
+            alarmTimes = listOf("09:00"),
+            soundUri = null
+        )
+        advanceUntilIdle()
 
-            assertTrue(awaitItem() is AlarmEvent.Error)
-        }
-
+        assertTrue(events.single() is AlarmEvent.Error)
         assertTrue(viewModel.uiState.value.registeredAlarms.isEmpty())
     }
 
