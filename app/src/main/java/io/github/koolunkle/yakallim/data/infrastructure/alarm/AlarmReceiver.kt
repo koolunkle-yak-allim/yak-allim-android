@@ -22,7 +22,7 @@ class AlarmReceiver : BroadcastReceiver() {
         val dosage = intent.getStringExtra(AlarmExtraSpec.KEY_DOSAGE_PER_TAKE) ?: "1"
         val frequency = intent.getIntExtra(AlarmExtraSpec.KEY_DAILY_FREQUENCY, 1)
         val duration = intent.getIntExtra(AlarmExtraSpec.KEY_DURATION_DAYS, 1)
-        val soundUri = AlarmExtraSpec.readSoundUri(intent)
+        val soundUri = intent.getStringExtra(AlarmExtraSpec.KEY_SOUND_URI)
 
         val entryPoint = EntryPointAccessors.fromApplication(
             context.applicationContext,
