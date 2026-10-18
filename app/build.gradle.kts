@@ -200,7 +200,6 @@ dependencies {
     // =================================================================
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
-    testImplementation(libs.turbine)
     testImplementation(libs.mockito.kotlin)
 
     androidTestImplementation(platform(libs.androidx.compose.bom))

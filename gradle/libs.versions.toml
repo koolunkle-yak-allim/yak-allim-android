@@ -26,7 +26,6 @@ datastore = "1.2.1"
 secretsGradlePlugin = "2.0.1"
 kotlinxSerializationJson = "1.11.0"
 desugarJdkLibs = "2.1.5"
-turbine = "1.2.1"
 mockitoKotlin = "6.4.0"
 
 [libraries]
@@ -83,7 +82,6 @@ kotlinx-coroutines-android = { group = "org.jetbrains.kotlinx", name = "kotlinx-
 kotlinx-coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-test", version.ref = "coroutines" }
 
 # Testing
-turbine = { group = "app.cash.turbine", name = "turbine", version.ref = "turbine" }
 mockito-kotlin = { group = "org.mockito.kotlin", name = "mockito-kotlin", version.ref = "mockitoKotlin" }
 
 # Coil (Image Loading)

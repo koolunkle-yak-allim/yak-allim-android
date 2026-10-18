@@ -25,7 +25,7 @@
 - **Local Storage**: DataStore Preferences
 - **Notification**: Firebase Cloud Messaging (FCM)
 - **Security & Build**: Secrets Gradle Plugin, Network Security Config (릴리스 빌드는 아직 코드 축소·난독화(`isMinifyEnabled`)를 켜지 않았습니다)
-- **Testing**: JUnit, Turbine(Flow 테스트), Mockito-Kotlin, Compose UI Test
+- **Testing**: JUnit, kotlinx-coroutines-test(가상 시간), Mockito-Kotlin, Compose UI Test
 
 ## Project Structure
 
