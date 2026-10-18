@@ -28,7 +28,7 @@ secretsGradlePlugin = "2.0.1"
 kotlinxSerializationJson = "1.11.0"
 desugarJdkLibs = "2.1.5"
 turbine = "1.2.1"
-mockitoKotlin = "5.4.0"
+mockitoKotlin = "6.4.0"
 
 [libraries]
 kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "kotlinxSerializationJson" }
