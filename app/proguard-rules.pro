@@ -7,18 +7,8 @@
 -keep interface * {
     @retrofit2.http.* <methods>;
 }
-
-# Moshi
+# Retrofit reads the @GET/@POST/@Part annotations at runtime.
 -keepattributes RuntimeVisibleAnnotations, RuntimeVisibleParameterAnnotations
--keepclassmembers class * {
-    @com.squareup.moshi.Json *;
-}
--keep class *JsonAdapter { *; }
--keep @com.squareup.moshi.JsonClass class *
--keepclassmembers @com.squareup.moshi.JsonClass class * {
-    <fields>;
-    <init>(...);
-}
 
 # OkHttp
 -keepattributes Signature, InnerClasses
@@ -37,6 +27,3 @@
 # Firebase
 -dontwarn com.google.firebase.**
 # Firebase also provides its own ProGuard rules in the AAR.
-
-# Project specific: Keep DTOs that use Moshi
--keep @com.squareup.moshi.JsonClass class io.github.koolunkle.yakallim.data.datasource.remote.dto.** { *; }
