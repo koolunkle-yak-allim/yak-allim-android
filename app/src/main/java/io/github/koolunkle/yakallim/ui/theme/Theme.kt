@@ -43,6 +43,10 @@ private val LightColorScheme = lightColorScheme(
     error = YakPalette.Danger,
     onError = YakPalette.OnTeal,
     errorContainer = YakPalette.DangerSoft,
+    // 스낵바처럼 반전된 면: 진한 바탕에 밝은 글자, 동작 글자는 다크 테마의 청록.
+    inverseSurface = YakPalette.Ink,
+    inverseOnSurface = YakPalette.Canvas,
+    inversePrimary = YakPalette.TealDark,
     onErrorContainer = YakPalette.Danger,
 )
 
@@ -75,6 +79,9 @@ private val DarkColorScheme = darkColorScheme(
     error = YakPalette.DangerDark,
     onError = YakPalette.CanvasDark,
     errorContainer = YakPalette.DangerSoftDark,
+    inverseSurface = YakPalette.InkDark,
+    inverseOnSurface = YakPalette.CanvasDark,
+    inversePrimary = YakPalette.Teal,
     onErrorContainer = YakPalette.DangerDark,
 )
 
