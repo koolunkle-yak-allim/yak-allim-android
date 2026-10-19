@@ -25,7 +25,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import io.github.koolunkle.yakallim.R
-import io.github.koolunkle.yakallim.ui.theme.Secondary
 
 @Composable
 fun OcrResetButton(
@@ -43,8 +42,8 @@ fun OcrResetButton(
             modifier = Modifier
                 .height(height = 44.dp)
                 .clip(shape = CircleShape),
-            colors = ButtonDefaults.outlinedButtonColors(contentColor = Secondary),
-            border = BorderStroke(width = 1.dp, color = Secondary.copy(alpha = 0.3f)),
+            colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.primary),
+            border = BorderStroke(width = 1.dp, color = MaterialTheme.colorScheme.outline),
             contentPadding = PaddingValues(horizontal = 20.dp)
         ) {
             Icon(

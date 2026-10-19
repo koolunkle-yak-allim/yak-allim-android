@@ -33,8 +33,6 @@ import com.airbnb.lottie.compose.LottieConstants
 import com.airbnb.lottie.compose.animateLottieCompositionAsState
 import com.airbnb.lottie.compose.rememberLottieComposition
 import io.github.koolunkle.yakallim.R
-import io.github.koolunkle.yakallim.ui.theme.HighlightCoral
-import io.github.koolunkle.yakallim.ui.theme.Primary
 import kotlinx.coroutines.delay
 
 @Composable
@@ -97,7 +95,7 @@ fun OcrLoadingContent(
         Spacer(modifier = Modifier.height(height = 32.dp))
         Text(
             text = message.ifEmpty { stringResource(R.string.ocr_status_analyzing) },
-            color = Primary,
+            color = MaterialTheme.colorScheme.onSurface,
             fontWeight = FontWeight.ExtraBold,
             textAlign = TextAlign.Center,
             style = MaterialTheme.typography.titleLarge
@@ -106,7 +104,7 @@ fun OcrLoadingContent(
         Text(
             text = if (displayedProgress > 0f && !isIndeterminate) "${(displayedProgress * 100).toInt()}%" else stringResource(R.string.ocr_status_subtext),
             modifier = Modifier.padding(horizontal = 40.dp),
-            color = Primary.copy(alpha = 0.6f),
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
             style = MaterialTheme.typography.bodyMedium
         )
@@ -116,8 +114,8 @@ fun OcrLoadingContent(
                 modifier = Modifier
                     .width(180.dp)
                     .clip(RoundedCornerShape(4.dp)),
-                color = HighlightCoral,
-                trackColor = Primary.copy(alpha = 0.1f)
+                color = MaterialTheme.colorScheme.primary,
+                trackColor = MaterialTheme.colorScheme.outline
             )
         } else if (displayedProgress > 0f) {
             Spacer(modifier = Modifier.height(height = 16.dp))
@@ -126,15 +124,15 @@ fun OcrLoadingContent(
                 modifier = Modifier
                     .width(180.dp)
                     .clip(RoundedCornerShape(4.dp)),
-                color = HighlightCoral,
-                trackColor = Primary.copy(alpha = 0.1f)
+                color = MaterialTheme.colorScheme.primary,
+                trackColor = MaterialTheme.colorScheme.outline
             )
         }
         Spacer(modifier = Modifier.height(height = 48.dp))
         TextButton(
             onClick = onCancelClick,
             modifier = Modifier.height(height = 48.dp),
-            colors = ButtonDefaults.textButtonColors(contentColor = HighlightCoral.copy(alpha = 0.8f))
+            colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
         ) {
             Text(
                 text = stringResource(R.string.ocr_btn_cancel),

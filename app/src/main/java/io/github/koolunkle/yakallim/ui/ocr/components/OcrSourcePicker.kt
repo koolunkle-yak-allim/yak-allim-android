@@ -13,6 +13,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
@@ -22,7 +23,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import io.github.koolunkle.yakallim.R
-import io.github.koolunkle.yakallim.ui.theme.Secondary
 
 @Composable
 fun OcrSourcePicker(
@@ -41,8 +41,8 @@ fun OcrSourcePicker(
                 .height(height = 48.dp),
             enabled = isEnabled,
             shape = RoundedCornerShape(size = 12.dp),
-            colors = ButtonDefaults.outlinedButtonColors(contentColor = Secondary),
-            border = BorderStroke(width = 1.dp, color = Secondary.copy(alpha = 0.2f))
+            colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.primary),
+            border = BorderStroke(width = 1.dp, color = MaterialTheme.colorScheme.outline)
         ) {
             Icon(
                 imageVector = Icons.Default.CameraAlt,
@@ -62,8 +62,8 @@ fun OcrSourcePicker(
                 .height(height = 48.dp),
             enabled = isEnabled,
             shape = RoundedCornerShape(size = 12.dp),
-            colors = ButtonDefaults.outlinedButtonColors(contentColor = Secondary),
-            border = BorderStroke(width = 1.dp, color = Secondary.copy(alpha = 0.2f))
+            colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.primary),
+            border = BorderStroke(width = 1.dp, color = MaterialTheme.colorScheme.outline)
         ) {
             Icon(
                 imageVector = Icons.Default.PhotoLibrary,

@@ -15,7 +15,8 @@
 
 ## Tech Stack
 
-- **UI**: Jetpack Compose
+- **UI**: Jetpack Compose (Material 3), 라이트·다크 테마. 색·글꼴·간격 기준은 [`DESIGN.md`](DESIGN.md)
+- **Font**: Pretendard(본문), 카투리체(앱 이름만)
 - **Language**: Kotlin
 - **Architecture**: Clean Architecture & MVVM
 - **Asynchronous**: Coroutines & Flow
