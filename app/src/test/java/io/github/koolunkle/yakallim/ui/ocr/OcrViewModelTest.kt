@@ -140,6 +140,9 @@ class OcrViewModelTest {
         val viewModel = createViewModel()
         advanceUntilIdle()
 
+        var cancelledEventCount = 0
+        val collectorJob = launch { viewModel.analysisCancelledEvents.collect { cancelledEventCount++ } }
+
         fakeRepository.progressFlow = flowOf(
             Progress(JobStatus.ANALYZING, "", 30, false),
             Progress(JobStatus.CANCELLED, "작업이 취소되었습니다.", 100, true)
@@ -151,9 +154,13 @@ class OcrViewModelTest {
 
         val state = viewModel.uiState.value
         assertFalse(state.isLoading)
-        assertTrue(state.error is OcrError.Unknown)
+        // 취소는 오류 카드가 아니라 안내(스낵바)로 보여 준다.
+        assertNull(state.error)
         assertNull(state.progress)
+        assertTrue(state.hasImage)
         assertTrue(fakeRepository.fetchedResultJobIds.isEmpty())
+        assertEquals(1, cancelledEventCount)
+        collectorJob.cancel()
     }
 
     @Test
@@ -218,9 +225,12 @@ class OcrViewModelTest {
     }
 
     @Test
-    fun onAnalysisCancelRequested_duringActiveAnalysis_stopsAnalysisAndShowsCancelledError() = runTest {
+    fun onAnalysisCancelRequested_duringActiveAnalysis_stopsAnalysisAndShowsCancelledNotice() = runTest {
         val viewModel = createViewModel()
         advanceUntilIdle()
+
+        var cancelledEventCount = 0
+        val collectorJob = launch { viewModel.analysisCancelledEvents.collect { cancelledEventCount++ } }
 
         // A progress flow that only resolves after a long delay, simulating an in-flight analysis.
         fakeRepository.progressFlow = flow {
@@ -244,11 +254,14 @@ class OcrViewModelTest {
 
         val state = viewModel.uiState.value
         assertFalse(state.isLoading)
-        assertTrue(state.error is OcrError.Unknown)
+        assertNull(state.error)
         assertNull(state.progress)
+        assertTrue(state.hasImage)
+        assertEquals(1, cancelledEventCount)
         assertEquals(cancelCallsBeforeCancellation + 1, fakeRepository.cancelAnalysisCallCount)
         // The cancelled coroutine must not resume and overwrite the cancelled state.
         assertNull(state.analysisResult)
+        collectorJob.cancel()
     }
 
     @Test

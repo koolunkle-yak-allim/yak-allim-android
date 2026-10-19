@@ -58,6 +58,10 @@ class OcrViewModel @Inject constructor(
     private val _analysisStartedEvents = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
     val analysisStartedEvents: SharedFlow<Unit> = _analysisStartedEvents.asSharedFlow()
 
+    // 취소는 오류가 아니므로 오류 카드 대신 화면이 스낵바로 한 번 알린다.
+    private val _analysisCancelledEvents = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+    val analysisCancelledEvents: SharedFlow<Unit> = _analysisCancelledEvents.asSharedFlow()
+
     private var job: Job? = null
     private var fetchJob: Job? = null
     private var activeJobId: String? = null
@@ -229,13 +233,7 @@ class OcrViewModel @Inject constructor(
             if (finalProgress != null) {
                 when (finalProgress.jobStatus) {
                     JobStatus.COMPLETED -> fetchAnalysisResult(jobId)
-                    JobStatus.CANCELLED -> _uiState.update {
-                        it.copy(
-                            isLoading = false,
-                            error = OcrError.Unknown(context.getString(R.string.ocr_status_cancelled)),
-                            progress = null
-                        )
-                    }
+                    JobStatus.CANCELLED -> showAnalysisCancelled()
                     // 서버는 실패 시 사용자에게 그대로 보여줄 수 있는 메시지를 보낸다.
                     else -> _uiState.update {
                         it.copy(
@@ -364,13 +362,15 @@ class OcrViewModel @Inject constructor(
 
     fun onAnalysisCancelRequested() {
         stopActiveAnalysis()
-        _uiState.update {
-            it.copy(
-                isLoading = false,
-                error = OcrError.Unknown(context.getString(R.string.ocr_status_cancelled)),
-                progress = null
-            )
-        }
+        // 취소한 작업을 다시 조회하지 않도록, 다음 "분석 시작"은 새 작업으로 시작한다.
+        activeJobId = null
+        showAnalysisCancelled()
+    }
+
+    /** 사진은 그대로 두고 분석 전 화면으로 돌아간다. */
+    private fun showAnalysisCancelled() {
+        _uiState.update { it.copy(isLoading = false, error = null, progress = null) }
+        _analysisCancelledEvents.tryEmit(Unit)
     }
 
     private fun stopActiveAnalysis() {

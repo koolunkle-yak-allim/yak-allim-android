@@ -131,6 +131,13 @@ fun OcrScreen(
         }
     }
 
+    LaunchedEffect(viewModel) {
+        viewModel.analysisCancelledEvents.collect {
+            snackbarHostState.currentSnackbarData?.dismiss()
+            snackbarHostState.showSnackbar(resources.getString(R.string.ocr_status_cancelled))
+        }
+    }
+
     LaunchedEffect(alarmViewModel) {
         alarmViewModel.events.collect { event ->
             when (event) {
