@@ -55,6 +55,6 @@ val NumeralTextStyle = style(20, 28, FontWeight.Bold).copy(fontFeatureSettings =
 val WordmarkTextStyle = TextStyle(
     fontFamily = KaturiFamily,
     fontWeight = FontWeight.Bold,
-    fontSize = 22.sp,
+    fontSize = 20.sp,
     lineHeight = 28.sp,
 )
