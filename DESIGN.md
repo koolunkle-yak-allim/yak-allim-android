@@ -50,7 +50,7 @@ rounded: { input: 8, button: 12, card: 16, sheet: 24, chip: full }
 touchTarget: { min: 48, primaryButton: 52 }
 ---
 
-# 약알림 디자인 시스템
+# 약올림 디자인 시스템
 
 코드의 기준은 `app/src/main/java/io/github/koolunkle/yakallim/ui/theme/`입니다.
 이 문서와 코드가 다르면 코드를 고치고 이 문서도 함께 고칩니다.
