@@ -11,6 +11,14 @@ import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.compose.foundation.background
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.material3.Text
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
@@ -45,6 +53,9 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import io.github.koolunkle.yakallim.R
 
+/** 복약 안내서는 대개 A4를 접은 세로 종이라, 가이드 테두리를 세로로 긴 비율로 둔다. */
+private const val GUIDE_ASPECT_RATIO = 3f / 4f
+
 @Composable
 fun CameraScreen(
     onCaptureSuccess: (Bitmap) -> Unit,
@@ -60,6 +71,8 @@ fun CameraScreen(
     val previewView = remember { PreviewView(context) }
     val imageCapture = remember { ImageCapture.Builder().build() }
     val cameraSelector = remember { CameraSelector.DEFAULT_BACK_CAMERA }
+
+    val shutterDescription = stringResource(R.string.camera_cd_shutter)
 
     BackHandler(onBack = onDismiss)
 
@@ -97,11 +110,36 @@ fun CameraScreen(
             factory = { previewView },
             modifier = Modifier.fillMaxSize()
         )
+        // 문서 가이드 테두리. 카메라 영상 위라 테마와 관계없이 흰 선을 쓴다.
+        Column(
+            modifier = Modifier
+                .align(Alignment.Center)
+                .padding(horizontal = 32.dp)
+                .padding(bottom = 64.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .aspectRatio(GUIDE_ASPECT_RATIO)
+                    .border(width = 2.dp, color = Color.White.copy(alpha = 0.9f), shape = RoundedCornerShape(16.dp))
+            )
+            Text(
+                text = stringResource(R.string.camera_guide_hint),
+                modifier = Modifier
+                    .background(color = Color.Black.copy(alpha = 0.5f), shape = CircleShape)
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                color = Color.White,
+                style = MaterialTheme.typography.bodyMedium
+            )
+        }
         IconButton(
             onClick = onDismiss,
             modifier = Modifier
-                .padding(all = 16.dp)
                 .statusBarsPadding()
+                .padding(all = 16.dp)
+                .size(48.dp)
                 .align(alignment = Alignment.TopStart)
                 .background(color = Color.Black.copy(alpha = 0.5f), shape = CircleShape)
         ) {
@@ -116,12 +154,12 @@ fun CameraScreen(
                 .fillMaxWidth()
                 .navigationBarsPadding()
                 .align(alignment = Alignment.BottomCenter)
-                .padding(bottom = 48.dp),
+                .padding(bottom = 32.dp),
             contentAlignment = Alignment.Center
         ) {
             Box(
                 modifier = Modifier
-                    .size(size = 80.dp)
+                    .size(size = 72.dp)
                     .border(width = 4.dp, color = Color.White, shape = CircleShape)
                     .padding(all = 6.dp)
                     .background(color = Color.Transparent, shape = CircleShape),
@@ -170,7 +208,9 @@ fun CameraScreen(
                                 })
                         }
                     },
-                    modifier = Modifier.fillMaxSize(),
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .semantics { contentDescription = shutterDescription },
                     enabled = !uiState.isCapturing,
                     shape = CircleShape,
                     colors = ButtonDefaults.buttonColors(containerColor = if (uiState.isCapturing) Color.Gray else Color.White),

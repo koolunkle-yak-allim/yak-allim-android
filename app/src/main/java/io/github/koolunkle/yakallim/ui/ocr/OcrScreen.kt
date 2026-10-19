@@ -10,7 +10,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
@@ -19,6 +19,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
@@ -28,6 +29,7 @@ import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -66,6 +68,10 @@ import io.github.koolunkle.yakallim.ui.ocr.components.OcrGuideBottomSheet
 import io.github.koolunkle.yakallim.ui.ocr.components.OcrImageViewer
 import io.github.koolunkle.yakallim.ui.ocr.components.OcrLoadingContent
 import io.github.koolunkle.yakallim.ui.ocr.components.OcrMedicineCard
+import io.github.koolunkle.yakallim.ui.ocr.components.OcrPhotoThumbnail
+import io.github.koolunkle.yakallim.ui.ocr.components.OcrResultHintBanner
+import io.github.koolunkle.yakallim.ui.ocr.components.OcrResultSummary
+import io.github.koolunkle.yakallim.ui.ocr.components.hasCompleteDosage
 import io.github.koolunkle.yakallim.ui.ocr.components.OcrResetButton
 import io.github.koolunkle.yakallim.ui.ocr.components.OcrSourcePicker
 import io.github.koolunkle.yakallim.ui.ocr.components.OcrTopBar
@@ -96,6 +102,11 @@ fun OcrScreen(
 
     val showCamera = remember { mutableStateOf(false) }
     val showGuideSheet = remember { mutableStateOf(false) }
+    val showResetConfirm = remember { mutableStateOf(false) }
+    val resetAnalysis = {
+        viewModel.resetAnalysisResult()
+        alarmViewModel.clearAllRegisteredAlarms()
+    }
 
     val unknownMedicineLabel = stringResource(R.string.error_unknown_medicine)
     val alarmSettingSoundTitle = stringResource(R.string.alarm_sheet_section_sound)
@@ -225,10 +236,31 @@ fun OcrScreen(
         onCancelAnalysisClick = viewModel::onAnalysisCancelRequested,
         onMedicineAlarmClick = onMedicineAlarmClick,
         onResetAnalysisClick = {
-            viewModel.resetAnalysisResult()
-            alarmViewModel.clearAllRegisteredAlarms()
+            // 켜 둔 알람도 함께 꺼지므로, 알람이 있을 때만 한 번 확인한다.
+            if (alarmUiState.registeredAlarms.isEmpty()) resetAnalysis() else showResetConfirm.value = true
         }
     )
+
+    if (showResetConfirm.value) {
+        AlertDialog(
+            onDismissRequest = { showResetConfirm.value = false },
+            title = { Text(stringResource(R.string.ocr_reset_confirm_title)) },
+            text = {
+                Text(stringResource(R.string.ocr_reset_confirm_body, alarmUiState.registeredAlarms.size))
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    showResetConfirm.value = false
+                    resetAnalysis()
+                }) { Text(stringResource(R.string.ocr_reset_confirm_ok)) }
+            },
+            dismissButton = {
+                TextButton(onClick = { showResetConfirm.value = false }) {
+                    Text(stringResource(R.string.common_cancel))
+                }
+            }
+        )
+    }
 
     val sheetMedicine = sheetMedicineId.value?.let { id ->
         uiState.analysisResult?.medicines?.firstOrNull { it.id == id }
@@ -319,15 +351,28 @@ internal fun OcrScreenContent(
     onCancelAnalysisClick: () -> Unit,
     onMedicineAlarmClick: (PrescribedMedicine) -> Unit
 ) {
+    val isReady = uiState.isInitialized && alarmUiState.isInitialized
+    val result = uiState.analysisResult?.takeIf { it.medicines.isNotEmpty() }
+    val isHome = result == null && !uiState.isLoading
+
     Scaffold(
         topBar = { OcrTopBar(onGuideButtonClick = onGuideClick) },
+        bottomBar = {
+            if (isReady && isHome) {
+                OcrActionButton(
+                    enabled = uiState.hasImage || uiState.error != null,
+                    hasError = uiState.error != null,
+                    onStartAnalysisClick = onStartAnalysisClick
+                )
+            }
+        },
         modifier = modifier.fillMaxSize(),
         containerColor = MaterialTheme.colorScheme.background,
         snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { padding ->
         if (isGuideSheetVisible) OcrGuideBottomSheet(onDismiss = onGuideDismissRequest)
 
-        if (!uiState.isInitialized || !alarmUiState.isInitialized) {
+        if (!isReady) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -339,65 +384,48 @@ internal fun OcrScreenContent(
             return@Scaffold
         }
 
-        val hasResult = uiState.analysisResult != null && uiState.analysisResult.medicines.isNotEmpty()
-
         LazyColumn(
             state = lazyListState,
             modifier = Modifier
                 .fillMaxSize()
-                .padding(padding)
-                .padding(horizontal = 20.dp),
+                .padding(padding),
+            contentPadding = PaddingValues(start = 20.dp, top = 8.dp, end = 20.dp, bottom = 32.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(space = 16.dp)
+            verticalArrangement = Arrangement.spacedBy(space = 12.dp)
         ) {
-            item {
-                Spacer(Modifier.height(height = 8.dp))
-                if (uiState.isLoading) {
+            when {
+                uiState.isLoading -> item {
                     val progress = uiState.progress ?: OcrProgress()
                     OcrLoadingContent(
+                        image = uiState.selectedImage,
                         progress = progress.percent,
                         message = progress.message,
                         isSseActive = progress.isSseActive,
                         isIndeterminate = progress.jobStatus == JobStatus.ANALYZING,
                         onCancelClick = onCancelAnalysisClick
                     )
-                } else {
-                    OcrImageViewer(image = uiState.selectedImage)
                 }
-            }
 
-            if (!hasResult && !uiState.isLoading) {
-                item { OcrSourcePicker(onCameraCaptureClick, onGallerySelectClick, true) }
-                item {
-                OcrActionButton(
-                    isLoading = false,
-                    enabled = uiState.hasImage || uiState.error != null,
-                    hasError = uiState.error != null,
-                    onStartAnalysisClick = onStartAnalysisClick
-                )
+                result == null -> {
+                    item { OcrImageViewer(image = uiState.selectedImage) }
+                    uiState.error?.let { item { OcrErrorCard(it) } }
+                    item { OcrSourcePicker(onCameraCaptureClick, onGallerySelectClick) }
                 }
-            }
 
-            uiState.error?.let { item { OcrErrorCard(it) } }
-
-            uiState.analysisResult?.let { result ->
-                if (result.medicines.isNotEmpty()) {
+                else -> {
+                    val names = result.medicines.map { it.name ?: unknownMedicineLabel }
                     item {
-                        Column(verticalArrangement = Arrangement.spacedBy(space = 8.dp)) {
-                            OcrResetButton(onResetAnalysisClick)
-                            Text(
-                                text = stringResource(R.string.ocr_result_verify_hint),
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                style = MaterialTheme.typography.bodySmall
-                            )
-                            // 서버는 생략 여부를 알 수 없어, 결과가 있을 때 항상 안내한다.
-                            Text(
-                                text = stringResource(R.string.ocr_result_omitted_hint),
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                style = MaterialTheme.typography.bodySmall
-                            )
-                        }
+                        OcrResultSummary(
+                            medicineCount = result.medicines.size,
+                            alarmOnCount = names.count { alarmUiState.registeredAlarms.containsKey(it) },
+                            needsCheckCount = result.medicines.zip(names).count { (medicine, name) ->
+                                !medicine.hasCompleteDosage() && !alarmUiState.registeredAlarms.containsKey(name)
+                            }
+                        )
                     }
+                    uiState.error?.let { item { OcrErrorCard(it) } }
+                    item { OcrResultHintBanner() }
+                    uiState.selectedImage?.let { image -> item { OcrPhotoThumbnail(image = image) } }
                     items(result.medicines, key = { it.id }) { medicine ->
                         val name = medicine.name ?: unknownMedicineLabel
                         val alarm = alarmUiState.registeredAlarms[name]
@@ -415,9 +443,12 @@ internal fun OcrScreenContent(
                             modifier = Modifier.testTag(medicineCardTag(medicine.id))
                         )
                     }
+                    item {
+                        Spacer(Modifier.height(12.dp))
+                        OcrResetButton(onResetAnalysisClick)
+                    }
                 }
             }
-            item { Spacer(Modifier.height(height = 32.dp)) }
         }
     }
 }

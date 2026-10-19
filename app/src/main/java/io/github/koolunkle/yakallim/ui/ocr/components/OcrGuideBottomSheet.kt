@@ -10,15 +10,10 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.BottomSheetDefaults
 import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.SheetState
@@ -28,9 +23,7 @@ import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import io.github.koolunkle.yakallim.R
 
@@ -49,59 +42,36 @@ fun OcrGuideBottomSheet(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
+                .verticalScroll(state = rememberScrollState())
                 .padding(horizontal = 24.dp)
                 .navigationBarsPadding()
-                .padding(bottom = 32.dp)
-                .verticalScroll(state = rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(space = 20.dp)
+                .padding(bottom = 24.dp),
+            verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
-            Row(
-                modifier = Modifier.padding(top = 4.dp),
-                horizontalArrangement = Arrangement.spacedBy(space = 12.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Info,
-                    contentDescription = null,
-                    modifier = Modifier.size(size = 28.dp),
-                    tint = MaterialTheme.colorScheme.primary
-                )
-                Text(
-                    text = stringResource(R.string.help_title_ocr),
-                    color = MaterialTheme.colorScheme.onSurface,
-                    fontWeight = FontWeight.Bold,
-                    style = MaterialTheme.typography.titleLarge
-                )
-            }
-            Column(
-                modifier = Modifier.padding(vertical = 8.dp),
-                verticalArrangement = Arrangement.spacedBy(space = 24.dp)
-            ) {
-                OcrGuideItem(
-                    number = "1",
-                    title = stringResource(R.string.help_item_analysis_title),
-                    desc = stringResource(R.string.help_item_analysis_desc)
-                )
-                OcrGuideItem(
-                    number = "2",
-                    title = stringResource(R.string.help_item_alarm_title),
-                    desc = stringResource(R.string.help_item_alarm_desc)
-                )
-            }
+            Text(
+                text = stringResource(R.string.help_title_ocr),
+                color = MaterialTheme.colorScheme.onSurface,
+                style = MaterialTheme.typography.titleLarge
+            )
+            OcrGuideItem(
+                number = 1,
+                title = stringResource(R.string.help_item_analysis_title),
+                desc = stringResource(R.string.help_item_analysis_desc)
+            )
+            OcrGuideItem(
+                number = 2,
+                title = stringResource(R.string.help_item_alarm_title),
+                desc = stringResource(R.string.help_item_alarm_desc)
+            )
             Button(
                 onClick = onDismiss,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(height = 56.dp),
-                shape = RoundedCornerShape(size = 16.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    contentColor = MaterialTheme.colorScheme.onPrimary
-                )
+                    .height(52.dp),
+                shape = MaterialTheme.shapes.medium
             ) {
                 Text(
                     text = stringResource(R.string.common_confirm),
-                    fontWeight = FontWeight.Bold,
                     style = MaterialTheme.typography.titleMedium
                 )
             }
@@ -110,33 +80,31 @@ fun OcrGuideBottomSheet(
 }
 
 @Composable
-private fun OcrGuideItem(number: String, title: String, desc: String) {
-    Row(horizontalArrangement = Arrangement.spacedBy(space = 16.dp)) {
+private fun OcrGuideItem(number: Int, title: String, desc: String) {
+    Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
         Surface(
-            modifier = Modifier.size(size = 24.dp),
-            shape = RoundedCornerShape(size = 8.dp),
+            modifier = Modifier.size(28.dp),
+            shape = MaterialTheme.shapes.small,
             color = MaterialTheme.colorScheme.primaryContainer
         ) {
             Box(contentAlignment = Alignment.Center) {
                 Text(
-                    text = number,
-                    color = MaterialTheme.colorScheme.primary,
-                    fontWeight = FontWeight.Bold,
+                    text = number.toString(),
+                    color = MaterialTheme.colorScheme.onPrimaryContainer,
                     style = MaterialTheme.typography.labelLarge
                 )
             }
         }
-        Column(verticalArrangement = Arrangement.spacedBy(space = 4.dp)) {
+        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Text(
                 text = title,
                 color = MaterialTheme.colorScheme.onSurface,
-                fontWeight = FontWeight.Bold,
-                style = MaterialTheme.typography.bodyLarge
+                style = MaterialTheme.typography.titleMedium
             )
             Text(
                 text = desc,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                style = MaterialTheme.typography.bodyMedium
+                style = MaterialTheme.typography.bodyLarge
             )
         }
     }

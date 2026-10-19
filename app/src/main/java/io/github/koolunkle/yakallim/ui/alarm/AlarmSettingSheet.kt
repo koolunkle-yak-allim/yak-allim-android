@@ -4,6 +4,28 @@ import android.media.Ringtone
 import android.media.RingtoneManager
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.waitForUpOrCancellation
+import androidx.compose.foundation.indication
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.PressInteraction
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.LocalContentColor
+import androidx.compose.material3.ripple
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.disabled
+import androidx.compose.ui.semantics.onClick
+import androidx.compose.ui.semantics.role
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -73,6 +95,9 @@ data class AlarmSheetResult(
     val alarmTimes: List<String>,
 )
 
+private const val REPEAT_START_DELAY_MS = 400L
+private const val REPEAT_INTERVAL_MS = 100L
+private const val DISABLED_ALPHA = 0.38f
 private val DURATION_PRESETS = listOf(3, 5, 7, 14, 30)
 private val DATE_FORMAT: DateTimeFormatter = DateTimeFormatter.ofPattern("M월 d일", Locale.KOREAN)
 
@@ -320,7 +345,7 @@ private fun StepperRow(
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurface
         )
-        IconButton(onClick = onDecrease, enabled = canDecrease) {
+        RepeatingIconButton(onClick = onDecrease, enabled = canDecrease) {
             Icon(
                 imageVector = Icons.Default.Remove,
                 contentDescription = stringResource(R.string.alarm_sheet_cd_decrease, label)
@@ -333,12 +358,71 @@ private fun StepperRow(
             color = if (valueText == null) YakTheme.status.warning else MaterialTheme.colorScheme.onSurface,
             textAlign = TextAlign.Center
         )
-        IconButton(onClick = onIncrease, enabled = canIncrease) {
+        RepeatingIconButton(onClick = onIncrease, enabled = canIncrease) {
             Icon(
                 imageVector = Icons.Default.Add,
                 contentDescription = stringResource(R.string.alarm_sheet_cd_increase, label)
             )
         }
+    }
+}
+
+/**
+ * 누르면 한 번, 길게 누르면 400ms 뒤부터 100ms마다 반복해서 [onClick]을 부른다.
+ * 범위 끝에 닿아 [enabled]가 false가 되면 반복도 멈춘다. 접근성 서비스에는 일반 버튼으로 보인다.
+ */
+@Composable
+private fun RepeatingIconButton(
+    onClick: () -> Unit,
+    enabled: Boolean,
+    content: @Composable () -> Unit,
+) {
+    val currentOnClick by rememberUpdatedState(onClick)
+    val interactionSource = remember { MutableInteractionSource() }
+    val contentColor = MaterialTheme.colorScheme.onSurface
+    Box(
+        modifier = Modifier
+            .size(48.dp)
+            .clip(CircleShape)
+            .indication(interactionSource, ripple())
+            .semantics {
+                role = Role.Button
+                if (!enabled) disabled()
+                onClick {
+                    if (enabled) currentOnClick()
+                    enabled
+                }
+            }
+            .pointerInput(enabled) {
+                if (!enabled) return@pointerInput
+                coroutineScope {
+                    awaitEachGesture {
+                        val down = awaitFirstDown()
+                        val press = PressInteraction.Press(down.position)
+                        launch { interactionSource.emit(press) }
+                        val repeat = launch {
+                            currentOnClick()
+                            delay(REPEAT_START_DELAY_MS)
+                            while (true) {
+                                currentOnClick()
+                                delay(REPEAT_INTERVAL_MS)
+                            }
+                        }
+                        val up = waitForUpOrCancellation()
+                        repeat.cancel()
+                        launch {
+                            interactionSource.emit(
+                                if (up != null) PressInteraction.Release(press) else PressInteraction.Cancel(press)
+                            )
+                        }
+                    }
+                }
+            },
+        contentAlignment = Alignment.Center
+    ) {
+        CompositionLocalProvider(
+            LocalContentColor provides if (enabled) contentColor else contentColor.copy(alpha = DISABLED_ALPHA)
+        ) { content() }
     }
 }
 
