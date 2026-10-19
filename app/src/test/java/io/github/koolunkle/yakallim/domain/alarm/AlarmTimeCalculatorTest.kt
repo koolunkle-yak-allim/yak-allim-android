@@ -2,6 +2,7 @@ package io.github.koolunkle.yakallim.domain.alarm
 
 import io.github.koolunkle.yakallim.domain.model.AlarmSpec
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.time.Instant
@@ -153,5 +154,30 @@ class AlarmTimeCalculatorTest {
 
         assertTrue(base != differentDay)
         assertTrue(base != differentTimeIndex)
+    }
+
+    private fun oneDaySpecStartingAt(start: Long) = AlarmSpec(
+        medicineName = "카두라엑스엘서방정",
+        dosagePerTake = "1정",
+        dailyFrequency = 2,
+        durationDays = 1,
+        alarmTimes = listOf("09:00", "19:00"),
+        soundUri = null,
+        startEpochMillis = start
+    )
+
+    @Test
+    fun `마지막 알람 전이면 끝나지 않은 것으로 본다`() {
+        val spec = oneDaySpecStartingAt(epochMillisAt(2026, 1, 1, 8, 0))
+
+        // 09:00은 지났지만 19:00이 남아 있다.
+        assertFalse(AlarmTimeCalculator.isFinished(spec, epochMillisAt(2026, 1, 1, 12, 0), zone))
+    }
+
+    @Test
+    fun `마지막 알람이 지나면 끝난 것으로 본다`() {
+        val spec = oneDaySpecStartingAt(epochMillisAt(2026, 1, 1, 8, 0))
+
+        assertTrue(AlarmTimeCalculator.isFinished(spec, epochMillisAt(2026, 1, 1, 19, 1), zone))
     }
 }

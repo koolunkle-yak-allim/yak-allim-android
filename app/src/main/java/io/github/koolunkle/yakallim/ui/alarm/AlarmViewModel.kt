@@ -44,14 +44,24 @@ class AlarmViewModel @Inject constructor(
     }
 
     private suspend fun recoverActiveAlarms() {
-        val activeAlarms = getActiveAlarmsUseCase()
-        val restoredDetails = activeAlarms.associateWith { medicineName ->
-            getAlarmDetailUseCase(medicineName) ?: Alarm(times = emptyList(), soundUri = null)
-        }
+        val restoredDetails = loadActiveAlarms()
         _uiState.update { state ->
             state.copy(registeredAlarms = state.registeredAlarms + restoredDetails)
         }
     }
+
+    /** 앱이 다시 화면에 나올 때 호출한다. 그사이 복용 기간이 끝난 알람을 목록에서 뺀다. */
+    fun refreshActiveAlarms() {
+        viewModelScope.launch {
+            val activeAlarms = loadActiveAlarms()
+            _uiState.update { it.copy(registeredAlarms = activeAlarms) }
+        }
+    }
+
+    private suspend fun loadActiveAlarms(): Map<String, Alarm> =
+        getActiveAlarmsUseCase().associateWith { medicineName ->
+            getAlarmDetailUseCase(medicineName) ?: Alarm(times = emptyList(), soundUri = null)
+        }
 
     fun registerMedicineAlarm(
         medicineId: String,

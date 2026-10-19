@@ -177,4 +177,22 @@ class AlarmViewModelTest {
         assertTrue(viewModel.uiState.value.registeredAlarms.isEmpty())
         assertTrue(fakeAlarmScheduler.cancelledCalls.containsAll(listOf("타이레놀정", "게보린정")))
     }
+
+    @Test
+    fun refreshActiveAlarms_removesAlarmsWhoseCourseHasEnded() = runTest {
+        fakeAlarmScheduler.activeAlarms = setOf("타이레놀정", "게보린정")
+        fakeAlarmScheduler.detailAlarms = mapOf(
+            "타이레놀정" to Alarm(times = listOf("09:00"), soundUri = null),
+            "게보린정" to Alarm(times = listOf("08:00"), soundUri = null)
+        )
+        val viewModel = createViewModel()
+        advanceUntilIdle()
+
+        // 앱이 백그라운드에 있는 동안 게보린정의 복용 기간이 끝나 스케줄러가 목록에서 뺐다.
+        fakeAlarmScheduler.activeAlarms = setOf("타이레놀정")
+        viewModel.refreshActiveAlarms()
+        advanceUntilIdle()
+
+        assertEquals(setOf("타이레놀정"), viewModel.uiState.value.registeredAlarms.keys)
+    }
 }
