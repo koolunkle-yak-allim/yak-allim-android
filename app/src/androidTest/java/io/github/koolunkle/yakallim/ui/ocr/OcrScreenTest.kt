@@ -6,7 +6,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.junit4.v2.createComposeRule
+import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.hasAnyDescendant
+import androidx.compose.ui.test.hasScrollAction
+import androidx.compose.ui.test.hasTestTag
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performScrollToNode
 import io.github.koolunkle.yakallim.domain.model.PrescribedMedicine
 import io.github.koolunkle.yakallim.domain.model.Prescription
 import io.github.koolunkle.yakallim.ui.alarm.AlarmUiState
@@ -47,10 +54,7 @@ class OcrScreenTest {
                 onResetAnalysisClick = {},
                 onStartAnalysisClick = {},
                 onCancelAnalysisClick = {},
-                onRegisterAlarmClick = { _, _, _, _, _ -> },
-                onCancelAlarmClick = {},
-                onToggleCardExpansion = {},
-                onToggleAllCardsExpansion = {}
+                onMedicineAlarmClick = {}
             )
         }
     }
@@ -119,8 +123,14 @@ class OcrScreenTest {
 
         setOcrScreenContent(medicines = triplicateMedicines)
 
-        composeTestRule.onAllNodesWithText("이지엔6", useUnmergedTree = true)
-            .assertCountEquals(3)
+        // 카드가 화면보다 길어 LazyColumn이 한 번에 다 그리지 않으므로, 카드마다 스크롤해 확인한다.
+        triplicateMedicines.forEach { medicine ->
+            val card = hasTestTag(medicineCardTag(medicine.id))
+            composeTestRule.onNode(hasScrollAction()).performScrollToNode(card)
+            composeTestRule.onNode(card).assertIsDisplayed()
+            composeTestRule.onNode(card and hasAnyDescendant(hasText("이지엔6")), useUnmergedTree = true)
+                .assertExists()
+        }
     }
 
     @Test
@@ -173,6 +183,25 @@ class OcrScreenTest {
 
         composeTestRule.onAllNodesWithText("타이레놀", useUnmergedTree = true).assertCountEquals(1)
         composeTestRule.onAllNodesWithText("게보린", useUnmergedTree = true).assertCountEquals(1)
+    }
+
+    @Test
+    fun ocrScreen_withMissingDosageValues_showsNeedsCheckAndEnterDosageButton() {
+        // 사진에 숫자가 없어 서버가 null로 준 약은 "확인 필요"와 "복용량 입력"으로 보여야 한다.
+        setOcrScreenContent(
+            medicines = listOf(
+                PrescribedMedicine(
+                    id = "medicine-1",
+                    name = "가스트렉스과립",
+                    dosagePerTake = null,
+                    dailyFrequency = null,
+                    durationDays = null
+                )
+            )
+        )
+
+        composeTestRule.onNodeWithText("확인 필요", useUnmergedTree = true).assertIsDisplayed()
+        composeTestRule.onNodeWithText("복용량 입력", useUnmergedTree = true).assertIsDisplayed()
     }
 
     @Test

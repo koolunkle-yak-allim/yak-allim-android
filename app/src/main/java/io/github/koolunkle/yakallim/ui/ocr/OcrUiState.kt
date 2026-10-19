@@ -29,7 +29,6 @@ data class OcrProgress(
 data class OcrUiState(
     val selectedImage: OcrImage? = null,
     val analysisResult: Prescription? = null,
-    val cardExpansionMap: Map<String, Boolean> = emptyMap(),
     val isLoading: Boolean = false,
     val isInitialized: Boolean = false,
     val error: OcrError? = null,

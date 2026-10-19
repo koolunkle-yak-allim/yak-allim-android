@@ -97,7 +97,7 @@ class AlarmViewModel @Inject constructor(
                         registeredAlarms = state.registeredAlarms + (medicineName to Alarm(alarmTimes, soundUri))
                     )
                 }
-                _events.emit(AlarmEvent.Registered(medicineId, dosagePerTake, dailyFrequency, durationDays))
+                _events.emit(AlarmEvent.Registered(medicineId, medicineName, dosagePerTake, dailyFrequency, durationDays))
             } else {
                 _events.emit(AlarmEvent.Error(context.getString(R.string.error_alarm_registration_failed)))
             }

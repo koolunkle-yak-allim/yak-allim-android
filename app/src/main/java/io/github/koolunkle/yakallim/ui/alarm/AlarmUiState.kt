@@ -10,6 +10,7 @@ data class AlarmUiState(
 sealed interface AlarmEvent {
     data class Registered(
         val medicineId: String,
+        val medicineName: String,
         val dosagePerTake: String,
         val dailyFrequency: Int,
         val durationDays: Int
@@ -17,11 +18,3 @@ sealed interface AlarmEvent {
 
     data class Error(val message: String) : AlarmEvent
 }
-
-data class PendingAlarm(
-    val medicineId: String,
-    val medicineName: String,
-    val dosagePerTake: String,
-    val dailyFrequency: Int,
-    val durationDays: Int
-)
