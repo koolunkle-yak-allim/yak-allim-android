@@ -5,25 +5,27 @@
     <string name="common_cancel">취소</string>
 
     <string name="camera_permission_required">카메라 권한이 필요합니다.</string>
-    <string name="camera_btn_capture">카메라 촬영</string>
+    <string name="camera_btn_capture">카메라로 찍기</string>
     <string name="camera_cd_close">카메라 화면 닫기</string>
+    <string name="camera_cd_shutter">사진 찍기</string>
+    <string name="camera_guide_hint">복약 안내서를 테두리 안에 맞춰 주세요</string>
     <string name="camera_cd_prescription">카메라로 촬영한 복약 안내서</string>
 
-    <string name="ocr_status_placeholder">분석할 복약 안내서를 등록해주세요.</string>
+    <string name="ocr_status_placeholder">복약 안내서를 찍거나 골라 주세요</string>
+    <string name="ocr_status_placeholder_sub">글자가 잘 보이도록 밝은 곳에서 평평하게 찍어 주세요.</string>
     <string name="ocr_status_analyzing">복약 안내서를 분석하고 있어요</string>
     <string name="ocr_status_subtext">글자를 인식하고 있습니다. 잠시만 기다려 주세요.</string>
     <string name="ocr_status_cancelled">분석 작업이 취소되었습니다.</string>
     <string name="ocr_status_uploading">이미지를 서버에 업로드하고 있습니다…</string>
     <string name="ocr_status_network_unstable">네트워크 연결 불안정… 분석 완료 알림을 기다리는 중입니다…</string>
 
-    <string name="ocr_btn_gallery_select">갤러리 선택</string>
+    <string name="ocr_btn_gallery_select">사진 고르기</string>
     <string name="ocr_btn_retry">다시 시도</string>
     <string name="ocr_btn_start">분석 시작</string>
     <string name="ocr_btn_cancel">분석 취소</string>
-    <string name="ocr_btn_image_change">다른 이미지로 분석하기</string>
+    <string name="ocr_btn_image_change">다른 사진으로 분석</string>
 
 
-    <string name="ocr_cd_upload_icon">업로드 표시 아이콘</string>
     <string name="ocr_cd_prescription">갤러리에서 선택한 복약 안내서</string>
 
     <string name="error_timeout">서버 응답 지연으로 분석에 실패했습니다. 잠시 후 다시 시도해 주세요.</string>
@@ -36,9 +38,20 @@
     <string name="error_alarm_registration_failed">알람 등록에 실패했습니다. 잠시 후 다시 시도해 주세요.</string>
     <string name="error_unknown_medicine">알 수 없는 약품</string>
     <string name="error_cd_icon">오류 표시 아이콘</string>
+    <string name="error_title">분석하지 못했어요</string>
 
-    <string name="ocr_result_verify_hint">인식 결과가 사진과 같은지 약품명과 복용법을 꼭 확인해 주세요.</string>
-    <string name="ocr_result_omitted_hint">안내문에 \'이하 5정\'처럼 생략된 약은 사진에 없어 인식되지 않습니다. 약 봉투나 처방전과 약 개수를 비교해 주세요.</string>
+    <!-- 결과 요약 -->
+    <string name="ocr_result_summary">약 %1$d개를 찾았어요</string>
+    <string name="ocr_result_alarm_count">알람 %1$d/%2$d개 켜짐</string>
+    <string name="ocr_result_needs_check_count">확인 필요 %1$d개</string>
+    <!-- 서버는 생략 여부를 알 수 없어, 결과가 있을 때 항상 함께 안내한다. -->
+    <string name="ocr_result_hint">사진과 약 이름·복용법이 같은지 꼭 확인해 주세요. 안내서에서 \'이하 5정\'처럼 생략된 약은 인식되지 않으니 약 봉투와 약 개수를 비교해 주세요.</string>
+    <string name="ocr_result_photo_title">원본 사진</string>
+    <string name="ocr_result_photo_action">눌러서 크게 보기</string>
+    <string name="ocr_cd_photo_close">사진 닫기</string>
+    <string name="ocr_reset_confirm_title">다른 사진으로 분석할까요?</string>
+    <string name="ocr_reset_confirm_body">켜 둔 알람 %1$d개도 함께 꺼져요.</string>
+    <string name="ocr_reset_confirm_ok">새로 분석</string>
 
     <string name="alarm_permission_required">지정 시간에 알람을 받으려면 \'알람 및 리마인더\' 권한이 필요합니다. 설정 화면으로 이동합니다.</string>
     <string name="alarm_permission_denied">알림을 받으시려면 설정에서 알림 권한을 허용해주세요.</string>
