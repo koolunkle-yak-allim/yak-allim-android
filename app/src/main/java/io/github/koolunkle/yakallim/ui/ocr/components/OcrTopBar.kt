@@ -16,10 +16,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import io.github.koolunkle.yakallim.R
-import io.github.koolunkle.yakallim.ui.theme.Primary
+import io.github.koolunkle.yakallim.ui.theme.WordmarkTextStyle
 
 @Composable
 fun OcrTopBar(onGuideButtonClick: () -> Unit) {
@@ -36,9 +35,8 @@ fun OcrTopBar(onGuideButtonClick: () -> Unit) {
             Text(
                 text = stringResource(R.string.app_name),
                 modifier = Modifier.align(alignment = Alignment.Center),
-                color = Primary,
-                fontWeight = FontWeight.Bold,
-                style = MaterialTheme.typography.titleLarge
+                color = MaterialTheme.colorScheme.onSurface,
+                style = WordmarkTextStyle
             )
             IconButton(
                 onClick = onGuideButtonClick,
@@ -47,7 +45,7 @@ fun OcrTopBar(onGuideButtonClick: () -> Unit) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.HelpOutline,
                     contentDescription = stringResource(R.string.help_title_guide),
-                    tint = Primary
+                    tint = MaterialTheme.colorScheme.onSurface
                 )
             }
         }

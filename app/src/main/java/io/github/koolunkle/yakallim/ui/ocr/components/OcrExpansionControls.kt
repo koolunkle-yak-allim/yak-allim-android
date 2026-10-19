@@ -23,7 +23,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import io.github.koolunkle.yakallim.R
-import io.github.koolunkle.yakallim.ui.theme.Secondary
 
 @Composable
 fun OcrExpansionControls(
@@ -40,7 +39,7 @@ fun OcrExpansionControls(
     ) {
         TextButton(
             onClick = { onToggleAllCardsExpansion(!isAllExpanded) },
-            colors = ButtonDefaults.textButtonColors(contentColor = Secondary),
+            colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.primary),
             contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp)
         ) {
             Icon(

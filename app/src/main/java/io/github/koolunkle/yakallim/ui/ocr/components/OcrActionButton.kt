@@ -15,7 +15,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import io.github.koolunkle.yakallim.R
-import io.github.koolunkle.yakallim.ui.theme.Secondary
 
 @Composable
 fun OcrActionButton(
@@ -33,8 +32,8 @@ fun OcrActionButton(
             enabled = enabled,
             shape = RoundedCornerShape(size = 16.dp),
             colors = ButtonDefaults.buttonColors(
-                containerColor = Secondary,
-                contentColor = Color.White
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary
             )
         ) {
             Text(

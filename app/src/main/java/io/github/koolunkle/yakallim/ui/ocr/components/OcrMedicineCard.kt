@@ -49,16 +49,9 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import io.github.koolunkle.yakallim.R
+import io.github.koolunkle.yakallim.ui.theme.YakTheme
 import io.github.koolunkle.yakallim.domain.model.PrescribedMedicine
 import io.github.koolunkle.yakallim.domain.model.Alarm
-import io.github.koolunkle.yakallim.ui.theme.HighlightCoral
-import io.github.koolunkle.yakallim.ui.theme.MintBorder
-import io.github.koolunkle.yakallim.ui.theme.Primary
-import io.github.koolunkle.yakallim.ui.theme.Secondary
-import io.github.koolunkle.yakallim.ui.theme.Success
-import io.github.koolunkle.yakallim.ui.theme.SuccessBorder
-import io.github.koolunkle.yakallim.ui.theme.SuccessContainer
-import io.github.koolunkle.yakallim.ui.theme.Warning
 
 @OptIn(ExperimentalLayoutApi::class, ExperimentalMaterial3Api::class)
 @Composable
@@ -75,21 +68,18 @@ fun OcrMedicineCard(
     val medicineName = medicineInfo.name ?: stringResource(R.string.error_unknown_medicine)
 
     val animatedContainerColor by animateColorAsState(
-        targetValue = if (isAlarmRegistered) SuccessContainer else Color.White,
+        targetValue = if (isAlarmRegistered) YakTheme.status.successContainer else MaterialTheme.colorScheme.surface,
         label = "cardContainerColor"
     )
     val targetBorderColor = when {
-        isAlarmRegistered -> Success.copy(alpha = 0.5f)
-        else -> Secondary.copy(alpha = 0.15f)
+        isAlarmRegistered -> YakTheme.status.success.copy(alpha = 0.5f)
+        else -> MaterialTheme.colorScheme.outline
     }
     val animatedBorderColor by animateColorAsState(
         targetValue = targetBorderColor,
         label = "cardBorderColor"
     )
-    val animatedInternalBorderColor by animateColorAsState(
-        targetValue = if (isAlarmRegistered) SuccessBorder else MintBorder,
-        label = "internalBorderColor"
-    )
+    val animatedInternalBorderColor = MaterialTheme.colorScheme.outline
 
     var dosagePerTake by remember(medicineInfo.name) {
         mutableStateOf(medicineInfo.dosagePerTake.orEmpty().filter { (it.isDigit() || it == '.') })
@@ -159,7 +149,7 @@ fun OcrMedicineCard(
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = medicineName,
-                        color = if (isAlarmRegistered) Success else Primary,
+                        color = if (isAlarmRegistered) YakTheme.status.success else MaterialTheme.colorScheme.onSurface,
                         fontWeight = FontWeight.ExtraBold,
                         style = MaterialTheme.typography.titleMedium
                     )
@@ -167,7 +157,7 @@ fun OcrMedicineCard(
                         Spacer(modifier = Modifier.height(height = 4.dp))
                         Text(
                             text = combinedDescription,
-                            color = Primary.copy(alpha = 0.7f),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                             style = MaterialTheme.typography.bodyMedium
                         )
                         if (isAlarmRegistered && alarm != null && alarm.times.isNotEmpty()) {
@@ -178,7 +168,7 @@ fun OcrMedicineCard(
                                     alarm.times.joinToString(", "),
                                     alarmSoundName
                                 ),
-                                color = Primary.copy(alpha = 0.7f),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 style = MaterialTheme.typography.bodyMedium,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis
@@ -197,8 +187,8 @@ fun OcrMedicineCard(
                                 modifier = Modifier.height(height = 36.dp),
                                 shape = RoundedCornerShape(size = 12.dp),
                                 colors = ButtonDefaults.buttonColors(
-                                    containerColor = HighlightCoral,
-                                    contentColor = Color.White
+                                    containerColor = MaterialTheme.colorScheme.error,
+                                    contentColor = MaterialTheme.colorScheme.onError
                                 ),
                                 contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp)
                             ) {
@@ -216,8 +206,8 @@ fun OcrMedicineCard(
                                 modifier = Modifier.height(height = 36.dp),
                                 shape = RoundedCornerShape(size = 12.dp),
                                 colors = ButtonDefaults.buttonColors(
-                                    containerColor = Secondary,
-                                    contentColor = Color.White
+                                    containerColor = MaterialTheme.colorScheme.primary,
+                                    contentColor = MaterialTheme.colorScheme.onPrimary
                                 ),
                                 contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp)
                             ) {
@@ -236,7 +226,7 @@ fun OcrMedicineCard(
                             Icon(
                                 imageVector = Icons.Default.ExpandLess,
                                 contentDescription = stringResource(R.string.common_cd_toggle_icon),
-                                tint = if (isAlarmRegistered) Success else Secondary
+                                tint = if (isAlarmRegistered) YakTheme.status.success else MaterialTheme.colorScheme.primary
                             )
                         }
                     }
@@ -279,14 +269,14 @@ fun OcrMedicineCard(
                 if (!isDosageInfoComplete) {
                     Text(
                         text = stringResource(R.string.alarm_dosage_info_required),
-                        color = Warning,
+                        color = YakTheme.status.warning,
                         style = MaterialTheme.typography.bodySmall
                     )
                 }
                 Surface(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(size = 12.dp),
-                    color = if (isAlarmRegistered) Color.White.copy(alpha = 0.5f) else Color.White.copy(alpha = 0.3f),
+                    color = MaterialTheme.colorScheme.surface,
                     border = BorderStroke(
                         width = 1.dp,
                         color = animatedInternalBorderColor.copy(alpha = 0.35f)
@@ -310,7 +300,7 @@ fun OcrMedicineCard(
                     Surface(
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(size = 12.dp),
-                        color = Color.White.copy(alpha = 0.5f),
+                        color = MaterialTheme.colorScheme.surface,
                         border = BorderStroke(
                             width = 1.dp,
                             color = animatedInternalBorderColor.copy(alpha = 0.35f)
@@ -352,8 +342,8 @@ fun OcrMedicineCard(
                                 .height(height = 48.dp),
                             shape = RoundedCornerShape(size = 12.dp),
                             colors = ButtonDefaults.buttonColors(
-                                containerColor = Secondary,
-                                contentColor = Color.White
+                                containerColor = MaterialTheme.colorScheme.primary,
+                                contentColor = MaterialTheme.colorScheme.onPrimary
                             )
                         ) {
                             Text(
@@ -368,8 +358,8 @@ fun OcrMedicineCard(
                                 .height(height = 48.dp),
                             shape = RoundedCornerShape(size = 12.dp),
                             colors = ButtonDefaults.buttonColors(
-                                containerColor = HighlightCoral,
-                                contentColor = Color.White
+                                containerColor = MaterialTheme.colorScheme.error,
+                                contentColor = MaterialTheme.colorScheme.onError
                             )
                         ) {
                             Text(
@@ -387,8 +377,8 @@ fun OcrMedicineCard(
                             .height(height = 48.dp),
                         shape = RoundedCornerShape(size = 12.dp),
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = Secondary,
-                            contentColor = Color.White
+                            containerColor = MaterialTheme.colorScheme.primary,
+                            contentColor = MaterialTheme.colorScheme.onPrimary
                         )
                     ) {
                         Text(
@@ -415,7 +405,7 @@ private fun MedicineInputField(
     Surface(
         modifier = modifier,
         shape = RoundedCornerShape(size = 12.dp),
-        color = if (isAlarmRegistered) Color.White.copy(alpha = 0.5f) else Color.Transparent,
+        color = if (isAlarmRegistered) MaterialTheme.colorScheme.surface else Color.Transparent,
         border = BorderStroke(
             width = 1.dp,
             color = borderColor.copy(alpha = if (isAlarmRegistered) 0.35f else 0.5f)
@@ -446,7 +436,7 @@ private fun MedicineInputField(
                     ),
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     singleLine = true,
-                    cursorBrush = SolidColor(if (isAlarmRegistered) Success else Secondary)
+                    cursorBrush = SolidColor(if (isAlarmRegistered) YakTheme.status.success else MaterialTheme.colorScheme.primary)
                 )
                 Text(
                     text = unitText,

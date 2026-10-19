@@ -46,8 +46,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogProperties
 import io.github.koolunkle.yakallim.R
-import io.github.koolunkle.yakallim.ui.theme.HighlightCoral
-import io.github.koolunkle.yakallim.ui.theme.Secondary
 import io.github.koolunkle.yakallim.util.showToast
 import java.util.Locale
 
@@ -122,7 +120,7 @@ fun OcrAlarmDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        containerColor = Color.White,
+        containerColor = MaterialTheme.colorScheme.surface,
         title = {
             Text(
                 text = stringResource(R.string.alarm_setting_title, medicineName),
@@ -374,7 +372,7 @@ fun OcrAlarmDialog(
                 },
                 shape = RoundedCornerShape(size = 12.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Secondary, contentColor = Color.White
+                    containerColor = MaterialTheme.colorScheme.primary, contentColor = MaterialTheme.colorScheme.onPrimary
                 ),
                 contentPadding = PaddingValues(horizontal = 24.dp, vertical = 10.dp)
             ) {
@@ -389,7 +387,7 @@ fun OcrAlarmDialog(
                 onClick = onDismiss,
                 shape = RoundedCornerShape(size = 12.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = HighlightCoral, contentColor = Color.White
+                    containerColor = MaterialTheme.colorScheme.error, contentColor = MaterialTheme.colorScheme.onError
                 ),
                 contentPadding = PaddingValues(horizontal = 24.dp, vertical = 10.dp)
             ) {

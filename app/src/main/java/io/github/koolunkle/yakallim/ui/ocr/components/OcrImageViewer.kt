@@ -28,8 +28,6 @@ import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import io.github.koolunkle.yakallim.R
 import io.github.koolunkle.yakallim.ui.ocr.OcrImage
-import io.github.koolunkle.yakallim.ui.theme.Primary
-import io.github.koolunkle.yakallim.ui.theme.Surface
 
 @Composable
 fun OcrImageViewer(image: OcrImage?) {
@@ -38,10 +36,10 @@ fun OcrImageViewer(image: OcrImage?) {
             .fillMaxWidth()
             .height(height = 300.dp)
             .clip(RoundedCornerShape(size = 24.dp))
-            .background(color = Surface)
+            .background(color = MaterialTheme.colorScheme.surfaceVariant)
             .border(
                 width = 1.dp,
-                color = Primary.copy(alpha = 0.08f),
+                color = MaterialTheme.colorScheme.outline,
                 shape = RoundedCornerShape(size = 24.dp)
             ),
         contentAlignment = Alignment.Center
@@ -67,11 +65,11 @@ fun OcrImageViewer(image: OcrImage?) {
                     imageVector = Icons.Default.CloudUpload,
                     contentDescription = stringResource(R.string.ocr_cd_upload_icon),
                     modifier = Modifier.size(size = 64.dp),
-                    tint = Primary.copy(alpha = 0.15f)
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Text(
                     text = stringResource(R.string.ocr_status_placeholder),
-                    color = Primary.copy(alpha = 0.3f),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontWeight = FontWeight.Bold,
                     style = MaterialTheme.typography.titleMedium
                 )

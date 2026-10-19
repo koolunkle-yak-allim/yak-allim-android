@@ -33,8 +33,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import io.github.koolunkle.yakallim.R
-import io.github.koolunkle.yakallim.ui.theme.Primary
-import io.github.koolunkle.yakallim.ui.theme.Secondary
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -45,8 +43,8 @@ fun OcrGuideBottomSheet(
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
-        containerColor = Color.White,
-        dragHandle = { BottomSheetDefaults.DragHandle(color = Primary.copy(alpha = 0.1f)) }
+        containerColor = MaterialTheme.colorScheme.surface,
+        dragHandle = { BottomSheetDefaults.DragHandle(color = MaterialTheme.colorScheme.outline) }
     ) {
         Column(
             modifier = Modifier
@@ -66,11 +64,11 @@ fun OcrGuideBottomSheet(
                     imageVector = Icons.Default.Info,
                     contentDescription = null,
                     modifier = Modifier.size(size = 28.dp),
-                    tint = Secondary
+                    tint = MaterialTheme.colorScheme.primary
                 )
                 Text(
                     text = stringResource(R.string.help_title_ocr),
-                    color = Primary,
+                    color = MaterialTheme.colorScheme.onSurface,
                     fontWeight = FontWeight.Bold,
                     style = MaterialTheme.typography.titleLarge
                 )
@@ -97,8 +95,8 @@ fun OcrGuideBottomSheet(
                     .height(height = 56.dp),
                 shape = RoundedCornerShape(size = 16.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Secondary,
-                    contentColor = Color.White
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary
                 )
             ) {
                 Text(
@@ -117,12 +115,12 @@ private fun OcrGuideItem(number: String, title: String, desc: String) {
         Surface(
             modifier = Modifier.size(size = 24.dp),
             shape = RoundedCornerShape(size = 8.dp),
-            color = Secondary.copy(alpha = 0.1f)
+            color = MaterialTheme.colorScheme.primaryContainer
         ) {
             Box(contentAlignment = Alignment.Center) {
                 Text(
                     text = number,
-                    color = Secondary,
+                    color = MaterialTheme.colorScheme.primary,
                     fontWeight = FontWeight.Bold,
                     style = MaterialTheme.typography.labelLarge
                 )
@@ -131,13 +129,13 @@ private fun OcrGuideItem(number: String, title: String, desc: String) {
         Column(verticalArrangement = Arrangement.spacedBy(space = 4.dp)) {
             Text(
                 text = title,
-                color = Primary,
+                color = MaterialTheme.colorScheme.onSurface,
                 fontWeight = FontWeight.Bold,
                 style = MaterialTheme.typography.bodyLarge
             )
             Text(
                 text = desc,
-                color = Primary.copy(alpha = 0.6f),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 style = MaterialTheme.typography.bodyMedium
             )
         }
