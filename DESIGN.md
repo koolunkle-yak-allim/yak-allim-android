@@ -44,7 +44,7 @@ typography:
   label:     { slot: labelLarge,    size: 15, lineHeight: 20, weight: 600 }
   caption:   { slot: labelSmall,    size: 12, lineHeight: 16, weight: 600 }
   numeral:   { token: NumeralTextStyle, size: 20, lineHeight: 28, weight: 700, features: tnum }
-  wordmark:  { token: WordmarkTextStyle, size: 22, lineHeight: 28, weight: 700 }
+  wordmark:  { token: WordmarkTextStyle, size: 20, lineHeight: 28, weight: 700 }
 spacing: [4, 8, 12, 16, 20, 24, 32]
 rounded: { input: 8, button: 12, card: 16, sheet: 24, chip: full }
 touchTarget: { min: 48, primaryButton: 52 }
@@ -126,7 +126,7 @@ YakTheme.status.successContainer           // 알람 켜짐 바탕
 | label | `labelLarge` | 15 / 20sp | 600 | 버튼, 칩 |
 | caption | `labelSmall` | 12 / 16sp | 600 | 메타 정보 |
 | numeral | `NumeralTextStyle` | 20 / 28sp | 700 | 시각, 스테퍼 숫자 |
-| wordmark | `WordmarkTextStyle` | 22 / 28sp | 700 | 상단바 앱 이름 |
+| wordmark | `WordmarkTextStyle` | 20 / 28sp | 700 | 상단바 앱 이름. 왼쪽 정렬, `onSurface` |
 
 ### 여백·모양
 
