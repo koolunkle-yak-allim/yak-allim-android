@@ -24,7 +24,9 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -33,10 +35,14 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.content.IntentCompat
@@ -47,15 +53,14 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import io.github.koolunkle.yakallim.R
 import io.github.koolunkle.yakallim.domain.model.JobStatus
+import io.github.koolunkle.yakallim.domain.model.PrescribedMedicine
 import io.github.koolunkle.yakallim.ui.alarm.AlarmEvent
 import io.github.koolunkle.yakallim.ui.alarm.AlarmUiState
 import io.github.koolunkle.yakallim.ui.alarm.AlarmViewModel
-import io.github.koolunkle.yakallim.ui.alarm.PendingAlarm
+import io.github.koolunkle.yakallim.ui.alarm.AlarmSettingSheet
 import io.github.koolunkle.yakallim.ui.camera.CameraScreen
 import io.github.koolunkle.yakallim.ui.ocr.components.OcrActionButton
-import io.github.koolunkle.yakallim.ui.ocr.components.OcrAlarmDialog
 import io.github.koolunkle.yakallim.ui.ocr.components.OcrErrorCard
-import io.github.koolunkle.yakallim.ui.ocr.components.OcrExpansionControls
 import io.github.koolunkle.yakallim.ui.ocr.components.OcrGuideBottomSheet
 import io.github.koolunkle.yakallim.ui.ocr.components.OcrImageViewer
 import io.github.koolunkle.yakallim.ui.ocr.components.OcrLoadingContent
@@ -70,6 +75,7 @@ import io.github.koolunkle.yakallim.util.openExactAlarmSettings
 import io.github.koolunkle.yakallim.util.requiredNotificationPermission
 import io.github.koolunkle.yakallim.util.showToast
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 @Composable
@@ -91,7 +97,10 @@ fun OcrScreen(
     val showGuideSheet = remember { mutableStateOf(false) }
 
     val unknownMedicineLabel = stringResource(R.string.error_unknown_medicine)
-    val alarmSettingSoundTitle = stringResource(R.string.alarm_setting_section_sound)
+    val alarmSettingSoundTitle = stringResource(R.string.alarm_sheet_section_sound)
+    val resources = LocalResources.current
+    val haptic = LocalHapticFeedback.current
+    val coroutineScope = rememberCoroutineScope()
 
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
@@ -113,9 +122,17 @@ fun OcrScreen(
     LaunchedEffect(alarmViewModel) {
         alarmViewModel.events.collect { event ->
             when (event) {
-                is AlarmEvent.Registered -> viewModel.updateMedicineDosage(
-                    event.medicineId, event.dosagePerTake, event.dailyFrequency, event.durationDays
-                )
+                is AlarmEvent.Registered -> {
+                    viewModel.updateMedicineDosage(
+                        event.medicineId, event.dosagePerTake, event.dailyFrequency, event.durationDays
+                    )
+                    haptic.performHapticFeedback(HapticFeedbackType.Confirm)
+                    snackbarHostState.currentSnackbarData?.dismiss()
+                    snackbarHostState.showSnackbar(
+                        message = resources.getString(R.string.alarm_snack_turned_on, event.medicineName),
+                        duration = SnackbarDuration.Short
+                    )
+                }
 
                 is AlarmEvent.Error -> snackbarHostState.showSnackbar(event.message)
             }
@@ -135,7 +152,8 @@ fun OcrScreen(
         it?.let { viewModel.onImageSelected(it) }
     }
 
-    val pendingAlarmData = remember { mutableStateOf<PendingAlarm?>(null) }
+    // 시트는 약 id로 연다. 같은 이름의 약이 여러 개여도 누른 카드의 값이 들어가게 한다.
+    val sheetMedicineId = remember { mutableStateOf<String?>(null) }
     val selectedSoundUri = remember { mutableStateOf<String?>(null) }
 
     val ringtonePickerLauncher = rememberLauncherForActivityResult(
@@ -172,21 +190,18 @@ fun OcrScreen(
         return
     }
 
-    val onRegisterAlarm =
-        { medicineId: String, medicineName: String, dosagePerTake: String, dailyFrequency: Int, durationDays: Int ->
-            context.checkAlarmPermissions(onNotificationRequired = {
-                requiredNotificationPermission?.let { notificationLauncher.launch(it) }
-            }, onExactAlarmRequired = {
-                context.showToast(R.string.alarm_permission_required, Toast.LENGTH_LONG)
-                context.openExactAlarmSettings()
-            }, onAllGranted = {
-                val existingDetail = alarmUiState.registeredAlarms[medicineName]
-                selectedSoundUri.value = existingDetail?.soundUri
-                pendingAlarmData.value = PendingAlarm(
-                    medicineId, medicineName, dosagePerTake, dailyFrequency, durationDays
-                )
-            })
-        }
+    val onMedicineAlarmClick = { medicine: PrescribedMedicine ->
+        context.checkAlarmPermissions(onNotificationRequired = {
+            requiredNotificationPermission?.let { notificationLauncher.launch(it) }
+        }, onExactAlarmRequired = {
+            context.showToast(R.string.alarm_permission_required, Toast.LENGTH_LONG)
+            context.openExactAlarmSettings()
+        }, onAllGranted = {
+            val name = medicine.name ?: unknownMedicineLabel
+            selectedSoundUri.value = alarmUiState.registeredAlarms[name]?.soundUri
+            sheetMedicineId.value = medicine.id
+        })
+    }
 
     OcrScreenContent(
         modifier = modifier,
@@ -207,47 +222,32 @@ fun OcrScreen(
         onGallerySelectClick = { galleryLauncher.launch("image/*") },
         onStartAnalysisClick = viewModel::retryAnalysis,
         onCancelAnalysisClick = viewModel::onAnalysisCancelRequested,
-        onRegisterAlarmClick = onRegisterAlarm,
-        onCancelAlarmClick = alarmViewModel::unregisterMedicineAlarm,
+        onMedicineAlarmClick = onMedicineAlarmClick,
         onResetAnalysisClick = {
             viewModel.resetAnalysisResult()
             alarmViewModel.clearAllRegisteredAlarms()
-        },
-        onToggleCardExpansion = viewModel::toggleCardExpansion,
-        onToggleAllCardsExpansion = viewModel::setAllCardsExpansion
+        }
     )
 
-    pendingAlarmData.value?.let { pendingData ->
-        OcrAlarmDialog(
-            medicineName = pendingData.medicineName,
-            dailyFrequency = pendingData.dailyFrequency,
-            initialSoundUri = selectedSoundUri.value,
-            initialSoundName = alarmSoundName(selectedSoundUri.value),
-            initialAlarmTimes = alarmUiState.registeredAlarms[pendingData.medicineName]?.times,
-            onDismiss = {
-                pendingAlarmData.value = null
-            },
-            onConfirm = { alarmTimes, soundUri ->
-                alarmViewModel.registerMedicineAlarm(
-                    pendingData.medicineId,
-                    pendingData.medicineName,
-                    pendingData.dosagePerTake,
-                    pendingData.dailyFrequency,
-                    pendingData.durationDays,
-                    alarmTimes,
-                    soundUri
-                )
-                pendingAlarmData.value = null
-            },
-            onSelectDeviceAudio = {
-                audioPickerLauncher.launch(arrayOf("audio/*"))
-            },
+    val sheetMedicine = sheetMedicineId.value?.let { id ->
+        uiState.analysisResult?.medicines?.firstOrNull { it.id == id }
+    }
+    sheetMedicine?.let { medicine ->
+        val name = medicine.name ?: unknownMedicineLabel
+        val existingAlarm = alarmUiState.registeredAlarms[name]
+        AlarmSettingSheet(
+            medicineName = name,
+            initialDosagePerTake = medicine.dosagePerTake,
+            initialFrequency = medicine.dailyFrequency,
+            initialDuration = medicine.durationDays,
+            initialTimes = existingAlarm?.times,
+            soundUri = selectedSoundUri.value,
+            soundName = alarmSoundName(selectedSoundUri.value),
+            isRegistered = existingAlarm != null,
             onSelectRingtone = {
                 val intent = Intent(RingtoneManager.ACTION_RINGTONE_PICKER).apply {
                     putExtra(RingtoneManager.EXTRA_RINGTONE_TYPE, RingtoneManager.TYPE_ALARM)
-                    putExtra(
-                        RingtoneManager.EXTRA_RINGTONE_TITLE, alarmSettingSoundTitle
-                    )
+                    putExtra(RingtoneManager.EXTRA_RINGTONE_TITLE, alarmSettingSoundTitle)
                     putExtra(RingtoneManager.EXTRA_RINGTONE_SHOW_DEFAULT, true)
                     putExtra(RingtoneManager.EXTRA_RINGTONE_SHOW_SILENT, true)
                     selectedSoundUri.value?.let {
@@ -255,7 +255,48 @@ fun OcrScreen(
                     }
                 }
                 ringtonePickerLauncher.launch(intent)
-            })
+            },
+            onSelectDeviceAudio = { audioPickerLauncher.launch(arrayOf("audio/*")) },
+            onConfirm = { result ->
+                alarmViewModel.registerMedicineAlarm(
+                    medicine.id,
+                    name,
+                    result.dosagePerTake,
+                    result.dailyFrequency,
+                    result.durationDays,
+                    result.alarmTimes,
+                    selectedSoundUri.value
+                )
+                sheetMedicineId.value = null
+            },
+            onTurnOff = {
+                sheetMedicineId.value = null
+                existingAlarm?.let { alarm ->
+                    alarmViewModel.unregisterMedicineAlarm(name)
+                    coroutineScope.launch {
+                        snackbarHostState.currentSnackbarData?.dismiss()
+                        val result = snackbarHostState.showSnackbar(
+                            message = resources.getString(R.string.alarm_snack_turned_off, name),
+                            actionLabel = resources.getString(R.string.alarm_snack_undo),
+                            duration = SnackbarDuration.Long
+                        )
+                        // 끄기 전 값으로 다시 켠다. 카드의 복용 정보는 그대로라 같은 값이 들어간다.
+                        if (result == SnackbarResult.ActionPerformed) {
+                            alarmViewModel.registerMedicineAlarm(
+                                medicine.id,
+                                name,
+                                medicine.dosagePerTake.orEmpty(),
+                                medicine.dailyFrequency ?: alarm.times.size,
+                                medicine.durationDays ?: 1,
+                                alarm.times,
+                                alarm.soundUri
+                            )
+                        }
+                    }
+                }
+            },
+            onDismiss = { sheetMedicineId.value = null }
+        )
     }
 }
 
@@ -275,10 +316,7 @@ internal fun OcrScreenContent(
     onResetAnalysisClick: () -> Unit,
     onStartAnalysisClick: () -> Unit,
     onCancelAnalysisClick: () -> Unit,
-    onRegisterAlarmClick: (String, String, String, Int, Int) -> Unit,
-    onCancelAlarmClick: (String) -> Unit,
-    onToggleCardExpansion: (String) -> Unit,
-    onToggleAllCardsExpansion: (Boolean) -> Unit
+    onMedicineAlarmClick: (PrescribedMedicine) -> Unit
 ) {
     Scaffold(
         topBar = { OcrTopBar(onGuideButtonClick = onGuideClick) },
@@ -301,7 +339,6 @@ internal fun OcrScreenContent(
         }
 
         val hasResult = uiState.analysisResult != null && uiState.analysisResult.medicines.isNotEmpty()
-        val isAllExpanded = uiState.cardExpansionMap.values.all { it } && uiState.cardExpansionMap.isNotEmpty()
 
         LazyColumn(
             state = lazyListState,
@@ -358,7 +395,6 @@ internal fun OcrScreenContent(
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 style = MaterialTheme.typography.bodySmall
                             )
-                            OcrExpansionControls(isAllExpanded, onToggleAllCardsExpansion)
                         }
                     }
                     items(result.medicines, key = { it.id }) { medicine ->
@@ -370,16 +406,11 @@ internal fun OcrScreenContent(
                             stringResource(R.string.alarm_sound_default)
                         }
                         OcrMedicineCard(
-                            medicineInfo = medicine,
-                            isAlarmRegistered = alarmUiState.registeredAlarms.containsKey(
-                                name
-                            ),
+                            medicine = medicine,
+                            displayName = name,
                             alarm = alarm,
                             alarmSoundName = alarmSoundName,
-                            isCardExpanded = uiState.cardExpansionMap[medicine.id] ?: true,
-                            onToggleExpansionClick = { onToggleCardExpansion(medicine.id) },
-                            onRegisterAlarmClick = onRegisterAlarmClick,
-                            onCancelAlarmClick = onCancelAlarmClick
+                            onAlarmClick = { onMedicineAlarmClick(medicine) }
                         )
                     }
                 }

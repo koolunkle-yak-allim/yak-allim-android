@@ -1,7 +1,7 @@
 package io.github.koolunkle.yakallim.ui.ocr
 
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.material3.MaterialTheme
+import io.github.koolunkle.yakallim.ui.theme.YakAllimTheme
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -14,7 +14,7 @@ import io.github.koolunkle.yakallim.ui.alarm.AlarmUiState
 @Preview(showBackground = true)
 @Composable
 internal fun OcrScreenContentPreview() {
-    MaterialTheme {
+    YakAllimTheme {
         val duplicateMedicines = listOf(
             PrescribedMedicine(
                 id = "preview-1",
@@ -50,10 +50,7 @@ internal fun OcrScreenContentPreview() {
             onResetAnalysisClick = {},
             onStartAnalysisClick = {},
             onCancelAnalysisClick = {},
-            onRegisterAlarmClick = { _, _, _, _, _ -> },
-            onCancelAlarmClick = {},
-            onToggleCardExpansion = {},
-            onToggleAllCardsExpansion = {}
+            onMedicineAlarmClick = {}
         )
     }
 }

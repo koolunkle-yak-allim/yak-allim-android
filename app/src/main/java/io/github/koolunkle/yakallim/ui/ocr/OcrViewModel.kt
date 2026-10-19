@@ -87,13 +87,9 @@ class OcrViewModel @Inject constructor(
         if (lastPrescription != null) {
             val restoredUri = getCachedImageUriUseCase.last()
             _uiState.update { state ->
-                val initialExpanded = lastPrescription.medicines.associate { medicine ->
-                    medicine.id to false
-                }
                 state.copy(
                     analysisResult = lastPrescription,
-                    selectedImage = restoredUri?.let { OcrImage.UriSource(it) },
-                    cardExpansionMap = initialExpanded
+                    selectedImage = restoredUri?.let { OcrImage.UriSource(it) }
                 )
             }
         }
@@ -133,7 +129,6 @@ class OcrViewModel @Inject constructor(
                 analysisResult = null,
                 error = null,
                 selectedImage = null,
-                cardExpansionMap = emptyMap(),
                 progress = null
             )
         }
@@ -160,7 +155,6 @@ class OcrViewModel @Inject constructor(
                     isLoading = true,
                     error = null,
                     analysisResult = null,
-                    cardExpansionMap = emptyMap(),
                     progress = OcrProgress(
                         jobStatus = JobStatus.ENQUEUED,
                         percent = 3,
@@ -312,15 +306,10 @@ class OcrViewModel @Inject constructor(
                     val isValid = analysisResult.medicines.isNotEmpty()
 
                     _uiState.update { state ->
-                        val initialExpanded = if (isValid) {
-                            analysisResult.medicines.associate { medicine -> medicine.id to false }
-                        } else emptyMap()
-                        
                         state.copy(
                             isLoading = false,
                             analysisResult = if (isValid) analysisResult else null,
                             selectedImage = restoredUri?.let { OcrImage.UriSource(it) } ?: state.selectedImage,
-                            cardExpansionMap = initialExpanded,
                             error = if (isValid) null else OcrError.EmptyResult
                         )
                     }
@@ -381,22 +370,6 @@ class OcrViewModel @Inject constructor(
                 error = OcrError.Unknown(context.getString(R.string.ocr_status_cancelled)),
                 progress = null
             )
-        }
-    }
-
-    fun toggleCardExpansion(medicineId: String) {
-        _uiState.update {
-            val current = it.cardExpansionMap[medicineId] ?: false
-            it.copy(cardExpansionMap = it.cardExpansionMap + (medicineId to !current))
-        }
-    }
-
-    fun setAllCardsExpansion(expanded: Boolean) {
-        _uiState.update { state ->
-            val newExpanded = state.analysisResult?.medicines?.associate { medicine ->
-                medicine.id to expanded
-            } ?: emptyMap()
-            state.copy(cardExpansionMap = newExpanded)
         }
     }
 

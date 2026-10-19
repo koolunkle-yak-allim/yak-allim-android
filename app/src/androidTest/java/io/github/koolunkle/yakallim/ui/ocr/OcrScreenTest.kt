@@ -47,10 +47,7 @@ class OcrScreenTest {
                 onResetAnalysisClick = {},
                 onStartAnalysisClick = {},
                 onCancelAnalysisClick = {},
-                onRegisterAlarmClick = { _, _, _, _, _ -> },
-                onCancelAlarmClick = {},
-                onToggleCardExpansion = {},
-                onToggleAllCardsExpansion = {}
+                onMedicineAlarmClick = {}
             )
         }
     }
