@@ -95,7 +95,10 @@ fun OcrScreen(
 
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_RESUME) viewModel.onAppForeground()
+            if (event == Lifecycle.Event.ON_RESUME) {
+                viewModel.onAppForeground()
+                alarmViewModel.refreshActiveAlarms()
+            }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }

@@ -77,8 +77,18 @@ class AlarmSchedulerImpl @Inject constructor(
         alarmPreference.removeActiveAlarmMedicine(medicineName)
     }
 
+    /** 아직 울릴 알람이 남은 약만 반환한다. 복용 기간이 끝난 약은 이때 저장소에서 정리한다. */
     override suspend fun getActiveAlarm(): Set<String> {
-        return alarmPreference.getActiveAlarmMedicines()
+        val now = System.currentTimeMillis()
+        return alarmPreference.getActiveAlarmMedicines().filterTo(mutableSetOf()) { medicineName ->
+            val spec = loadSpec(medicineName)
+            val isActive = spec != null && !AlarmTimeCalculator.isFinished(spec, now, zone)
+            if (!isActive) {
+                alarmPreference.removeAlarmSpecJson(medicineName)
+                alarmPreference.removeActiveAlarmMedicine(medicineName)
+            }
+            isActive
+        }
     }
 
     override suspend fun getAlarmDetail(medicineName: String): Alarm? {
@@ -88,7 +98,7 @@ class AlarmSchedulerImpl @Inject constructor(
 
     /** 재부팅 등으로 예약이 모두 사라졌을 때, 저장된 모든 활성 알람을 남은 미래 시각 기준으로 다시 건다. */
     override suspend fun rescheduleAll() {
-        alarmPreference.getActiveAlarmMedicines().forEach { medicineName ->
+        getActiveAlarm().forEach { medicineName ->
             loadSpec(medicineName)?.let { spec -> armFutureTriggers(spec) }
         }
     }

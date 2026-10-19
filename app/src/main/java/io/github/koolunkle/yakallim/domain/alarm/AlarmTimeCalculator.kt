@@ -17,6 +17,10 @@ object AlarmTimeCalculator {
     fun triggerTimes(spec: AlarmSpec, nowMillis: Long, zone: ZoneId): List<Trigger> =
         allTriggers(spec, zone).filter { it.triggerMillis > nowMillis }
 
+    /** 더 울릴 알람이 없으면(복용 기간의 마지막 알람이 지났으면) true. */
+    fun isFinished(spec: AlarmSpec, nowMillis: Long, zone: ZoneId): Boolean =
+        triggerTimes(spec, nowMillis, zone).isEmpty()
+
     /** day×시각의 전체 격자를 계산한다(과거 시각 포함). 요청 코드 계산 등에 쓰인다. */
     fun allTriggers(spec: AlarmSpec, zone: ZoneId): List<Trigger> {
         if (spec.dailyFrequency <= 0 || spec.durationDays <= 0 || spec.alarmTimes.isEmpty()) return emptyList()
