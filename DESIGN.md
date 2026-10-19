@@ -95,6 +95,8 @@ touchTarget: { min: 48, primaryButton: 52 }
 | `onSurfaceVariant` / `surface` (라이트) | 6.26:1 |
 | `primary` / `surface` (다크) | 7.52:1 |
 | `onSurface` / `surface` (다크) | 13.38:1 |
+| `inversePrimary` / `inverseSurface` (스낵바 동작 글자, 라이트) | 7.51:1 |
+| `inversePrimary` / `inverseSurface` (스낵바 동작 글자, 다크) | 4.98:1 |
 
 이전 색은 흰 글자 / `#00ACC1` 2.74:1, 흰 글자 / `#FF8A65` 2.31:1로 기준에 못 미쳤습니다.
 
