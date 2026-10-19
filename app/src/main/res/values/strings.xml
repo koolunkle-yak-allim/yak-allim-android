@@ -15,7 +15,7 @@
     <string name="ocr_status_placeholder_sub">글자가 잘 보이도록 밝은 곳에서 평평하게 찍어 주세요.</string>
     <string name="ocr_status_analyzing">복약 안내서를 분석하고 있어요</string>
     <string name="ocr_status_subtext">글자를 인식하고 있습니다. 잠시만 기다려 주세요.</string>
-    <string name="ocr_status_cancelled">분석 작업이 취소되었습니다.</string>
+    <string name="ocr_status_cancelled">분석을 취소했어요</string>
     <string name="ocr_status_uploading">이미지를 서버에 업로드하고 있습니다…</string>
     <string name="ocr_status_network_unstable">네트워크 연결 불안정… 분석 완료 알림을 기다리는 중입니다…</string>
 
