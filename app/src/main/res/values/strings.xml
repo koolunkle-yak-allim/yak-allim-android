@@ -74,6 +74,8 @@
     <string name="alarm_sheet_duration">복용 기간</string>
     <string name="alarm_sheet_duration_range">%1$s ~ %2$s</string>
     <string name="alarm_sheet_value_empty">선택</string>
+    <string name="alarm_sheet_value_frequency">%1$d회</string>
+    <string name="alarm_sheet_value_duration">%1$d일</string>
     <string name="alarm_sheet_missing_hint">사진에 없어 비워 둔 값이 있어요. 약 봉투를 보고 직접 정해 주세요.</string>
     <string name="alarm_sheet_section_times">복용 시각 · 하루 %1$d번</string>
     <string name="alarm_sheet_section_sound">알람음</string>

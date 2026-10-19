@@ -43,6 +43,7 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalResources
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.content.IntentCompat
@@ -410,7 +411,8 @@ internal fun OcrScreenContent(
                             displayName = name,
                             alarm = alarm,
                             alarmSoundName = alarmSoundName,
-                            onAlarmClick = { onMedicineAlarmClick(medicine) }
+                            onAlarmClick = { onMedicineAlarmClick(medicine) },
+                            modifier = Modifier.testTag(medicineCardTag(medicine.id))
                         )
                     }
                 }
@@ -419,6 +421,8 @@ internal fun OcrScreenContent(
         }
     }
 }
+
+internal fun medicineCardTag(medicineId: String) = "medicineCard:$medicineId"
 
 @Composable
 private fun alarmSoundName(soundUri: String?): String {

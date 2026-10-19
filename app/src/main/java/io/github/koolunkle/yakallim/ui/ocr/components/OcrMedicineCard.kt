@@ -22,7 +22,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.FilledTonalButton
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -64,6 +63,7 @@ fun OcrMedicineCard(
     alarm: Alarm?,
     alarmSoundName: String,
     onAlarmClick: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     val status = when {
         alarm != null -> MedicineCardStatus.ON
@@ -72,7 +72,7 @@ fun OcrMedicineCard(
     }
 
     Surface(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .animateContentSize(),
         shape = MaterialTheme.shapes.large,
@@ -80,8 +80,8 @@ fun OcrMedicineCard(
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
     ) {
         Column(
-            modifier = Modifier.padding(start = 16.dp, top = 16.dp, end = 16.dp, bottom = 8.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            modifier = Modifier.padding(start = 16.dp, top = 16.dp, end = 16.dp, bottom = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -116,8 +116,6 @@ fun OcrMedicineCard(
                     overflow = TextOverflow.Ellipsis
                 )
             }
-
-            HorizontalDivider(color = MaterialTheme.colorScheme.outline)
 
             Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.CenterEnd) {
                 when (status) {

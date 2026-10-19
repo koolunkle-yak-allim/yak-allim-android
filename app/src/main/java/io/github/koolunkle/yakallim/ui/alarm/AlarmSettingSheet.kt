@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -173,7 +174,7 @@ fun AlarmSettingSheet(
             )
             StepperRow(
                 label = stringResource(R.string.alarm_sheet_frequency),
-                valueText = frequency?.let { stringResource(R.string.medicine_spec_frequency, it.toString()) },
+                valueText = frequency?.let { stringResource(R.string.alarm_sheet_value_frequency, it) },
                 canDecrease = frequency == null || frequency!! > AlarmFormDefaults.MIN_FREQUENCY,
                 canIncrease = frequency == null || frequency!! < AlarmFormDefaults.MAX_FREQUENCY,
                 onDecrease = { updateFrequency(((frequency ?: 4) - 1).coerceAtLeast(AlarmFormDefaults.MIN_FREQUENCY)) },
@@ -182,7 +183,7 @@ fun AlarmSettingSheet(
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 StepperRow(
                     label = stringResource(R.string.alarm_sheet_duration),
-                    valueText = duration?.let { stringResource(R.string.medicine_spec_duration, it.toString()) },
+                    valueText = duration?.let { stringResource(R.string.alarm_sheet_value_duration, it) },
                     canDecrease = duration == null || duration!! > AlarmFormDefaults.MIN_DURATION_DAYS,
                     canIncrease = duration == null || duration!! < AlarmFormDefaults.MAX_DURATION_DAYS,
                     onDecrease = {
@@ -197,7 +198,7 @@ fun AlarmSettingSheet(
                         FilterChip(
                             selected = duration == days,
                             onClick = { duration = days },
-                            label = { Text(stringResource(R.string.medicine_spec_duration, days.toString())) }
+                            label = { Text(stringResource(R.string.alarm_sheet_value_duration, days)) }
                         )
                     }
                 }
@@ -327,7 +328,7 @@ private fun StepperRow(
         }
         Text(
             text = valueText ?: stringResource(R.string.alarm_sheet_value_empty),
-            modifier = Modifier.widthIn(min = 72.dp),
+            modifier = Modifier.width(80.dp),
             style = MaterialTheme.typography.titleMedium.merge(NumeralTextStyle),
             color = if (valueText == null) YakTheme.status.warning else MaterialTheme.colorScheme.onSurface,
             textAlign = TextAlign.Center
