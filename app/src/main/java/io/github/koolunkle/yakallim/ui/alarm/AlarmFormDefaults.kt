@@ -1,6 +1,7 @@
 package io.github.koolunkle.yakallim.ui.alarm
 
 import java.util.Locale
+import kotlin.math.abs
 
 /** 알람 설정 시트가 쓰는 기본값과 복용량 문자열 처리. 화면과 분리해 단위 테스트한다. */
 object AlarmFormDefaults {
@@ -55,11 +56,23 @@ object AlarmFormDefaults {
         }
     }
 
-    /** 횟수가 바뀌면, 사용자가 이미 고친 앞쪽 시각은 남기고 나머지는 기본값으로 채운다. */
+    /**
+     * 횟수가 바뀔 때의 복용 시각. 새 횟수의 기본값에서 시작해, 사용자가 고친 시각은 그대로 남긴다.
+     * 고친 시각 하나가 가장 가까운 기본값 하나를 대신하고, 결과는 시간순이다.
+     * 고친 시각이 새 횟수보다 많으면 이른 시각부터 남긴다.
+     */
     fun resizeTimes(current: List<String>, dailyFrequency: Int): List<String> {
         val defaults = defaultTimes(dailyFrequency)
-        return List(dailyFrequency) { index -> current.getOrNull(index) ?: defaults[index] }
+        if (current.isEmpty()) return defaults
+        val previous = defaultTimes(current.size)
+        val kept = current.filterIndexed { index, time -> time != previous[index] }.sorted().take(dailyFrequency)
+        val remaining = defaults.toMutableList()
+        kept.forEach { time -> remaining.remove(remaining.minBy { abs(minutesOf(it) - minutesOf(time)) }) }
+        return (kept + remaining).sorted()
     }
+
+    private fun minutesOf(time: String): Int =
+        time.substringBefore(":").toInt() * 60 + time.substringAfter(":").toInt()
 
     /** "08:00"이 하루 중 언제인지 짧게 부른다. 시각 칩의 이름표에 쓴다. */
     fun timeOfDayLabel(time: String): TimeOfDay {
