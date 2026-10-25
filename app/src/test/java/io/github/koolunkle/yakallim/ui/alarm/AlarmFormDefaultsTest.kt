@@ -63,10 +63,51 @@ class AlarmFormDefaultsTest {
     }
 
     @Test
-    fun `횟수가 줄면 뒤쪽 시각을 뺀다`() {
+    fun `횟수가 줄면 늦은 시각부터 뺀다`() {
         assertEquals(
             listOf("07:30", "13:00"),
             AlarmFormDefaults.resizeTimes(listOf("07:30", "13:00", "20:00"), 2)
+        )
+        assertEquals(
+            listOf("07:30", "13:00"),
+            AlarmFormDefaults.resizeTimes(listOf("20:00", "07:30", "13:00"), 2)
+        )
+    }
+
+    @Test
+    fun `시각을 고치지 않았으면 새 횟수의 기본값을 쓴다`() {
+        (1..8).forEach { from ->
+            (1..8).forEach { to ->
+                assertEquals(
+                    AlarmFormDefaults.defaultTimes(to),
+                    AlarmFormDefaults.resizeTimes(AlarmFormDefaults.defaultTimes(from), to)
+                )
+            }
+        }
+    }
+
+    @Test
+    fun `고친 시각은 가장 가까운 기본값 대신 들어가고 시간순으로 둔다`() {
+        assertEquals(
+            listOf("08:00", "12:30", "21:00"),
+            AlarmFormDefaults.resizeTimes(listOf("08:00", "21:00"), 3)
+        )
+        assertEquals(
+            listOf("08:00", "12:30", "21:00"),
+            AlarmFormDefaults.resizeTimes(listOf("21:00", "19:00"), 3)
+        )
+    }
+
+    @Test
+    fun `횟수가 줄어도 고친 시각을 먼저 남긴다`() {
+        assertEquals(listOf("21:00"), AlarmFormDefaults.resizeTimes(listOf("21:00", "19:00"), 1))
+    }
+
+    @Test
+    fun `채우는 기본값은 남긴 시각과 겹치지 않는다`() {
+        assertEquals(
+            listOf("08:00", "12:30", "18:30"),
+            AlarmFormDefaults.resizeTimes(listOf("12:30"), 3)
         )
     }
 
