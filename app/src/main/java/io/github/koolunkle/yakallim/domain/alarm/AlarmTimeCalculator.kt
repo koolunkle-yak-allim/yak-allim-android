@@ -21,12 +21,17 @@ object AlarmTimeCalculator {
     fun isFinished(spec: AlarmSpec, nowMillis: Long, zone: ZoneId): Boolean =
         triggerTimes(spec, nowMillis, zone).isEmpty()
 
-    /** day×시각의 전체 격자를 계산한다(과거 시각 포함). 요청 코드 계산 등에 쓰인다. */
+    /**
+     * day×시각의 전체 격자를 계산한다(과거 시각 포함). 요청 코드 계산 등에 쓰인다.
+     * 복용 시작일은 등록한 시간대의 날짜로 고정하고, 각 시각은 [zone]의 벽시계 시각으로 둔다.
+     * 그래서 시간대를 옮겨도 복용 일수는 그대로이고, "08:00"은 옮긴 곳의 오전 8시에 울린다.
+     */
     fun allTriggers(spec: AlarmSpec, zone: ZoneId): List<Trigger> {
         if (spec.dailyFrequency <= 0 || spec.durationDays <= 0 || spec.alarmTimes.isEmpty()) return emptyList()
 
         val totalAlarms = spec.dailyFrequency * spec.durationDays
-        val startDate = Instant.ofEpochMilli(spec.startEpochMillis).atZone(zone).toLocalDate()
+        val startZone = spec.startZoneId?.let { runCatching { ZoneId.of(it) }.getOrNull() } ?: zone
+        val startDate = Instant.ofEpochMilli(spec.startEpochMillis).atZone(startZone).toLocalDate()
 
         val triggers = mutableListOf<Trigger>()
         var index = 0
