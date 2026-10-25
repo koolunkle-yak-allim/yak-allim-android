@@ -309,7 +309,7 @@ fun AlarmSettingSheet(
             initialTime = times[index],
             onDismiss = { editingTimeIndex = null },
             onConfirm = { picked ->
-                times = times.toMutableList().also { it[index] = picked }
+                times = AlarmFormDefaults.replaceTime(times, index, picked)
                 editingTimeIndex = null
             }
         )
