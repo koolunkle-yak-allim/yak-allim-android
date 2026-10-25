@@ -14,7 +14,10 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 
-/** 기기 재부팅 시 사라진 알람들을 저장된 [io.github.koolunkle.yakallim.domain.model.AlarmSpec] 기준으로 다시 등록한다. */
+/**
+ * 저장된 [io.github.koolunkle.yakallim.domain.model.AlarmSpec] 기준으로 알람을 다시 등록한다.
+ * 재부팅하면 예약이 사라지고, 시간대나 시각이 바뀌면 "아침 8시" 같은 복용 시각의 실제 발생 시점이 달라지기 때문이다.
+ */
 class BootReceiver : BroadcastReceiver() {
 
     @EntryPoint
@@ -24,7 +27,7 @@ class BootReceiver : BroadcastReceiver() {
     }
 
     override fun onReceive(context: Context, intent: Intent) {
-        if (intent.action != Intent.ACTION_BOOT_COMPLETED) return
+        if (intent.action !in RESCHEDULE_ACTIONS) return
 
         val entryPoint = EntryPointAccessors.fromApplication(
             context.applicationContext,
@@ -37,7 +40,7 @@ class BootReceiver : BroadcastReceiver() {
             try {
                 alarmScheduler.rescheduleAll()
             } catch (e: Exception) {
-                Log.e(TAG, "재부팅 후 알람 재등록 실패", e)
+                Log.e(TAG, "알람 재등록 실패: ${intent.action}", e)
             } finally {
                 pendingResult.finish()
             }
@@ -46,5 +49,11 @@ class BootReceiver : BroadcastReceiver() {
 
     companion object {
         private const val TAG = "BootReceiver"
+
+        private val RESCHEDULE_ACTIONS = setOf(
+            Intent.ACTION_BOOT_COMPLETED,
+            Intent.ACTION_TIMEZONE_CHANGED,
+            Intent.ACTION_TIME_CHANGED,
+        )
     }
 }

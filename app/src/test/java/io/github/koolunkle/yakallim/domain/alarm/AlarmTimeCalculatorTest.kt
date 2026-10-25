@@ -138,6 +138,42 @@ class AlarmTimeCalculatorTest {
         assertTrue(seoulTrigger.triggerMillis != utcTrigger.triggerMillis)
     }
 
+    // 서울 1월 1일 07:00에 2일치를 등록하고, 파리(서울보다 8시간 늦음)로 옮겨 파리 1월 1일 00:00에 다시 계산한다.
+    private val travelSpec = AlarmSpec(
+        medicineName = "타이레놀",
+        dosagePerTake = "1정",
+        dailyFrequency = 2,
+        durationDays = 2,
+        alarmTimes = listOf("08:00", "19:00"),
+        soundUri = null,
+        startEpochMillis = epochMillisAt(2026, 1, 1, 7, 0),
+        startZoneId = "Asia/Seoul"
+    )
+    private val paris: ZoneId = ZoneId.of("Europe/Paris")
+    private val parisMidnight = ZonedDateTime.of(2026, 1, 1, 0, 0, 0, 0, paris).toInstant().toEpochMilli()
+
+    private fun localTimes(spec: AlarmSpec): List<String> =
+        AlarmTimeCalculator.triggerTimes(spec, parisMidnight, paris).map {
+            Instant.ofEpochMilli(it.triggerMillis).atZone(paris).toLocalDateTime().toString()
+        }
+
+    @Test
+    fun `시간대가 바뀌면 시작일은 그대로 두고 새 시간대의 벽시계 시각으로 계산한다`() {
+        assertEquals(
+            listOf("2026-01-01T08:00", "2026-01-01T19:00", "2026-01-02T08:00", "2026-01-02T19:00"),
+            localTimes(travelSpec)
+        )
+    }
+
+    @Test
+    fun `등록 시간대가 없는 이전 알람은 지금 시간대의 날짜를 시작일로 쓴다`() {
+        // 서울 1월 1일 07:00은 파리로 12월 31일이라, 첫날 두 번은 이미 지난 시각이 된다.
+        assertEquals(
+            listOf("2026-01-01T08:00", "2026-01-01T19:00"),
+            localTimes(travelSpec.copy(startZoneId = null))
+        )
+    }
+
     @Test
     fun `약품명과 day, timeIndex가 같으면 항상 같은 요청 코드를 반환한다`() {
         val codeA = AlarmTimeCalculator.requestCode("타이레놀", day = 2, timeIndex = 1)

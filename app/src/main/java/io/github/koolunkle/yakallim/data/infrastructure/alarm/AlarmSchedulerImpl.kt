@@ -27,7 +27,8 @@ class AlarmSchedulerImpl @Inject constructor(
 
     private val alarmManager = context.alarmManager
         ?: throw IllegalStateException("AlarmManager service is not available")
-    private val zone: ZoneId = ZoneId.systemDefault()
+    // 사용자가 시간대를 바꿀 수 있으므로 매번 기기의 현재 시간대를 읽는다.
+    private val zone: ZoneId get() = ZoneId.systemDefault()
 
     override suspend fun schedule(
         medicineName: String,
@@ -46,7 +47,8 @@ class AlarmSchedulerImpl @Inject constructor(
             durationDays = durationDays,
             alarmTimes = alarmTimes,
             soundUri = soundUri,
-            startEpochMillis = System.currentTimeMillis()
+            startEpochMillis = System.currentTimeMillis(),
+            startZoneId = zone.id
         )
 
         armFutureTriggers(spec)
@@ -58,20 +60,7 @@ class AlarmSchedulerImpl @Inject constructor(
     override suspend fun cancel(medicineName: String) {
         val spec = loadSpec(medicineName) ?: return
 
-        AlarmTimeCalculator.allTriggers(spec, zone).forEach { trigger ->
-            val intent = Intent(context, AlarmReceiver::class.java).apply {
-                setPackage(context.packageName)
-            }
-            val requestCode = AlarmTimeCalculator.requestCode(medicineName, trigger.day, trigger.timeIndex)
-            val pendingIntent = PendingIntent.getBroadcast(
-                context, requestCode, intent,
-                PendingIntent.FLAG_NO_CREATE or PendingIntent.FLAG_IMMUTABLE
-            )
-            if (pendingIntent != null) {
-                alarmManager.cancel(pendingIntent)
-                pendingIntent.cancel()
-            }
-        }
+        cancelTriggers(spec)
 
         alarmPreference.removeAlarmSpecJson(medicineName)
         alarmPreference.removeActiveAlarmMedicine(medicineName)
@@ -96,16 +85,40 @@ class AlarmSchedulerImpl @Inject constructor(
         return Alarm(spec.alarmTimes, spec.soundUri)
     }
 
-    /** 재부팅 등으로 예약이 모두 사라졌을 때, 저장된 모든 활성 알람을 남은 미래 시각 기준으로 다시 건다. */
+    /**
+     * 저장된 모든 활성 알람을 지금 시간대의 남은 시각으로 다시 건다. 재부팅과 시간대·시각 변경 때 부른다.
+     * 시간대가 바뀌면 같은 칸의 발생 시각이 달라져 예전 예약이 남을 수 있으므로, 먼저 모든 칸을 지우고 건다.
+     */
     override suspend fun rescheduleAll() {
         getActiveAlarm().forEach { medicineName ->
-            loadSpec(medicineName)?.let { spec -> armFutureTriggers(spec) }
+            loadSpec(medicineName)?.let { spec ->
+                cancelTriggers(spec)
+                armFutureTriggers(spec)
+            }
         }
     }
 
     private suspend fun loadSpec(medicineName: String): AlarmSpec? {
         val specJson = alarmPreference.getAlarmSpecJson(medicineName) ?: return null
         return runCatching { json.decodeFromString<AlarmSpec>(specJson) }.getOrNull()
+    }
+
+    /** 요청 코드는 약품명과 day·시각 칸으로만 정해지므로, 시간대와 상관없이 모든 칸의 예약을 지운다. */
+    private fun cancelTriggers(spec: AlarmSpec) {
+        AlarmTimeCalculator.allTriggers(spec, zone).forEach { trigger ->
+            val intent = Intent(context, AlarmReceiver::class.java).apply {
+                setPackage(context.packageName)
+            }
+            val requestCode = AlarmTimeCalculator.requestCode(spec.medicineName, trigger.day, trigger.timeIndex)
+            val pendingIntent = PendingIntent.getBroadcast(
+                context, requestCode, intent,
+                PendingIntent.FLAG_NO_CREATE or PendingIntent.FLAG_IMMUTABLE
+            )
+            if (pendingIntent != null) {
+                alarmManager.cancel(pendingIntent)
+                pendingIntent.cancel()
+            }
+        }
     }
 
     private fun armFutureTriggers(spec: AlarmSpec) {
