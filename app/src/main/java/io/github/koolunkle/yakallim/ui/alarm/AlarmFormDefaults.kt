@@ -64,12 +64,17 @@ object AlarmFormDefaults {
     fun resizeTimes(current: List<String>, dailyFrequency: Int): List<String> {
         val defaults = defaultTimes(dailyFrequency)
         if (current.isEmpty()) return defaults
-        val previous = defaultTimes(current.size)
-        val kept = current.filterIndexed { index, time -> time != previous[index] }.sorted().take(dailyFrequency)
+        // 시각은 고칠 때마다 정렬되어 자리가 바뀌므로, 자리가 아니라 값으로 이전 기본값과 비교해 고친 시각을 고른다.
+        val unmatchedDefaults = defaultTimes(current.size).toMutableList()
+        val kept = current.filterNot { unmatchedDefaults.remove(it) }.sorted().take(dailyFrequency)
         val remaining = defaults.toMutableList()
         kept.forEach { time -> remaining.remove(remaining.minBy { abs(minutesOf(it) - minutesOf(time)) }) }
         return (kept + remaining).sorted()
     }
+
+    /** 시각 칩 하나를 [time]으로 고친 뒤 시간순으로 다시 놓는다. 칩과 알람 카드가 늘 시간순으로 보이게 한다. */
+    fun replaceTime(times: List<String>, index: Int, time: String): List<String> =
+        times.toMutableList().also { it[index] = time }.sorted()
 
     private fun minutesOf(time: String): Int =
         time.substringBefore(":").toInt() * 60 + time.substringAfter(":").toInt()

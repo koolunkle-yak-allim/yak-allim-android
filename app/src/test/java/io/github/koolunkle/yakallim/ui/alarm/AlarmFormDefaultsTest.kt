@@ -104,6 +104,27 @@ class AlarmFormDefaultsTest {
     }
 
     @Test
+    fun `시각 하나를 고치면 시간순으로 다시 놓는다`() {
+        assertEquals(
+            listOf("19:00", "21:00"),
+            AlarmFormDefaults.replaceTime(listOf("08:00", "19:00"), 0, "21:00")
+        )
+        assertEquals(
+            listOf("07:30", "19:00"),
+            AlarmFormDefaults.replaceTime(listOf("08:00", "19:00"), 0, "07:30")
+        )
+    }
+
+    @Test
+    fun `정렬되어 자리가 바뀐 뒤에도 고친 시각만 남기고 횟수를 바꾼다`() {
+        // 2회 기본값의 08:00을 21:00으로 고치면 19:00 · 21:00이 된다. 19:00은 고친 시각이 아니다.
+        val edited = AlarmFormDefaults.replaceTime(AlarmFormDefaults.defaultTimes(2), 0, "21:00")
+
+        assertEquals(listOf("08:00", "12:30", "21:00"), AlarmFormDefaults.resizeTimes(edited, 3))
+        assertEquals(listOf("21:00"), AlarmFormDefaults.resizeTimes(edited, 1))
+    }
+
+    @Test
     fun `채우는 기본값은 남긴 시각과 겹치지 않는다`() {
         assertEquals(
             listOf("08:00", "12:30", "18:30"),
