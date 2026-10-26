@@ -47,10 +47,13 @@ pipeline {
                         """
 
                         // 2. Dynamic Docker Container Agent: --volumes-from으로 Jenkins 볼륨을 공유하여 빌드 진행 후 자동 파기
+                        //    /root/.android는 볼륨으로 둔다. 컨테이너가 매번 새로 만들어지면 디버그 서명 키도 새로 생겨,
+                        //    빌드마다 서명이 달라 이전 APK 위에 덮어 설치할 수 없기 때문이다.
                         sh """
                             docker run --rm \
                                 --volumes-from yak-allim-jenkins \
                                 -v yak-allim-android-gradle-cache:/root/.gradle \
+                                -v yak-allim-android-debug-keystore:/root/.android \
                                 -w "${env.WORKSPACE}" \
                                 thyrlian/android-sdk:10.0 \
                                 sh -c "./gradlew ${cleanOption} ${buildTask}"
